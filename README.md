@@ -9,9 +9,9 @@ git clone https://github.com/psyc-201/henderson2025
 cd henderson2025
 ```
 
-2. Download the original authors’ helper function code (`code_utils`) from their [GitHub repo](https://github.com/mmhenderson/shapeDim) and place it in the top layer of the repo directory.
+2. Download the original authors’ helper function code folder (`code_utils`) from their [GitHub repo](https://github.com/mmhenderson/shapeDim) and place it in the top layer of the repo directory.
 
-3. Create a folder called `data` inside this directory.  
+3. Create a folder called `data` also inside the top layer of this directory.  
 Within `data`, make subfolders named `Samples` and `DataBehavior`.
 
 4. Download the data files from the authors’ [OSF repo](https://osf.io/fa8jk/) and move them into the appropriate folders:
