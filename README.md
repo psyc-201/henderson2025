@@ -1,23 +1,22 @@
 # Replication Project: Henderson et al. (2025)
-This repo reproduces the ROI × Task × Boundary decoding analysis (near-trial ANOVA) from Henderson et al. (2025).
+This repo reproduces the ROI × Task × Boundary decoding analysis (near-trial ANOVA) from Henderson et al. (2025). It also creates Figure 2A-C to examine the general trend of results (i.e. whether the means/general direction of the data stayed the same)
 
 ## How to Run the Reproducibility Test
-1. Clone the repository:
+1. Clone the repository into whatever directory of your choosing, and then navigate into it:
 
 ```
-cd ~/Documents
-git clone https://github.com/psyc-201/henderson2025.git
+git clone https://github.com/psyc-201/henderson2025
 cd henderson2025
 ```
 
-2. Download the original authors’ helper function code (`code_utils`) from their GitHub and place it in the top layer of the repo directory.
+2. Download the original authors’ helper function code (`code_utils`) from their [GitHub repo](https://github.com/mmhenderson/shapeDim) and place it in the top layer of the repo directory.
 
 3. Create a folder called `data` inside this directory.  
 Within `data`, make subfolders named `Samples` and `DataBehavior`.
 
-4. Download the data files from the authors’ OSF repository and move them into the appropriate folders:
+4. Download the data files from the authors’ [OSF repo](https://osf.io/fa8jk/) and move them into the appropriate folders:
 - `.mat` and `.csv` files go inside `data/Samples` and `data/DataBehavior`.
-- You may have to download the Samples files one-by-one then move them into this folder (the zip file seemed to have issues on OSF)
+- You may have to download the `Samples` files one-by-one then move them into this folder (the zip file seemed to have issues on OSF)
 
 5. Open the file `reproducing_decoding_anova_result.py` in an IDE.
 
