@@ -161,8 +161,10 @@ def convert_mat_to_npz(sub_ids, repo_root, out_dir):
             n_hemi = ROIs.shape[1] if len(ROIs.shape) > 1 else 1
             roi_names = [f"ROI_{i+1}" for i in range(n_rois)]  # no names present in file
             roi_vox_ids = []
+            
             for ri in range(n_rois):
                 per_hemi = []
+                
                 for hi in range(n_hemi):
                     ref = ROIs[ri][hi] if n_hemi > 1 else ROIs[ri]
                     per_hemi.append(np.array(f[ref][:], dtype=int).ravel())
@@ -316,7 +318,7 @@ def subject_decoding_df(sub_id, data_path, boundaries, top_k_voxels='min'):
     # apply voxel masks to main-task data
     roi_arrays = [X[:, mask] for X, mask in zip(roi_arrays_main, voxel_masks)]
 
-    # ---- decode within MAIN ----
+    # decoding!!
     task_id_to_name = {1: 'linear1', 2: 'linear2', 3: 'nonlinear'}
     rows = []
     
@@ -394,21 +396,21 @@ def build_trial_onset_bool(event_labels, run_labels):
     return onset_bool
 
 # one-way ANOVA voxel selection (as in Henderson et al.)
-def select_voxels_by_quadrant_anova(X, quadrants, top_k):
+def select_voxels_by_quadrant_anova(trial_by_voxel, quadrants, top_k):
 
-    if X.shape[0] <= 1:
-        return np.ones(X.shape[1], dtype=bool)
+    if trial_by_voxel.shape[0] <= 1:
+        return np.ones(trial_by_voxel.shape[1], dtype=bool)
     
-    F, _ = f_classif(X, quadrants)
+    F, _ = f_classif(trial_by_voxel, quadrants)
     F[np.isnan(F)] = 0
     order = np.argsort(F)[::-1]
     keep = order[:min(top_k, len(order))]
-    mask = np.zeros(X.shape[1], dtype=bool)
+    mask = np.zeros(trial_by_voxel.shape[1], dtype=bool)
     mask[keep] = True
     
     return mask
 
-#%% Make npz once (writes into Samples/)
+#%% Make npz files once (writes into Samples/)
 
 convert_mat_to_npz(sub_ids, repo_root=root_dir, out_dir=bold_data_path)  # run once, then comment out
 
@@ -430,20 +432,21 @@ aov = run_task_boundary_roi_anova(acc_long, out_csv=os.path.join(stats_output_pa
 
 #%% Figure 2A–C style plots (I copied the authors' style here)
 
-# Choose output dir for figures
-fig_outdir = os.path.join(stats_output_path, "figs")
+fig_outdir = os.path.join(stats_output_path, "figs") # ourpur path for figs
 os.makedirs(fig_outdir, exist_ok=True)
 
-# Which panels to plot = whatever boundaries exist in your long table
-boundaries_present = [b for b in ["linear1","linear2","nonlinear"] if b in acc_long["Boundary"].unique().tolist()]
+boundaries_present = [b for b in ["linear1", "linear2", "nonlinear"] if b in acc_long["Boundary"].unique().tolist()]
 if not boundaries_present:
     print("No boundaries found to plot.")
+    
 else:
-    # Helpful ROI ordering: keep whatever you have but move 'IPS' to the end if present
     def ordered_rois(df):
+        
         rois = list(df["ROI"].unique())
+        
         if "IPS" in rois:
             rois = [r for r in rois if r != "IPS"] + ["IPS"]
+            
         return rois
 
     # Colors by Task (consistent across panels)
@@ -462,13 +465,11 @@ else:
     for ax, bnd in zip(axes, boundaries_present):
         df_b = acc_long[acc_long["Boundary"] == bnd].copy()
 
-        # Keep only Tasks we have (usually ['linear1','linear2'])
+        # keep only Tasks we have (usually ['linear1','linear2'])
         tasks_here = [t for t in task_levels if t in df_b["Task"].unique().tolist()]
         rois = ordered_rois(df_b)
 
-        # Compute mean ± SEM across subjects for each ROI × Task
-        # Ensure subject-level rows exist for dots
-        # (acc_long already has per-subject rows by construction)
+        # get mean and sem across subjects for each ROI × Task
         means = {}
         errors = {}
         for t in tasks_here:
@@ -485,13 +486,15 @@ else:
         # Per-subject dots with light lines (paired within ROI)
         # Pivot to sub × (ROI, Task)
         for ri, roi in enumerate(rois):
-            # Gather per-subject ACC for each task at this ROI
-            # We'll merge on 'sub' to draw paired lines
+            
+            # gather per-subject accuracies for each task at this ROI
             per_task = []
+            
             for t in tasks_here:
                 tmp = df_b[(df_b["ROI"] == roi) & (df_b["Task"] == t)][["sub","ACC"]].copy()
                 tmp = tmp.rename(columns={"ACC": f"ACC_{t}"})
                 per_task.append(tmp)
+                
             if not per_task:
                 continue
             
@@ -521,7 +524,7 @@ else:
         # draw chance line
         ax.axhline(0.5, color="k", lw=1.0, ls="--", alpha=0.6)
 
-        # Axes/labels/styling
+        # axes labels, legend, etc.
         ax.set_xticks(x)
         ax.set_xticklabels(rois, rotation=0)
         ax.set_ylim(0.4, 0.8)  # adjust if your data differ; authors' was around .5–.7
@@ -533,6 +536,7 @@ else:
 
     # make legend
     handles, labels = axes[0].get_legend_handles_labels()
+    
     if handles:
         fig.legend(handles, labels, loc="upper center", ncol=len(task_levels), frameon=False)
 
