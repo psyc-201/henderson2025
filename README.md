@@ -15,8 +15,9 @@ cd henderson2025
 Within `data`, make subfolders named `Samples` and `DataBehavior`.
 
 4. Download the data files from the authors’ [OSF repo](https://osf.io/fa8jk/) and move them into the appropriate folders:
-- `.mat` and `.csv` files go inside `data/Samples` and `data/DataBehavior`.
-- You may have to download the `Samples` files one-by-one then move them into this folder (the zip file seemed to have issues on OSF)
+- Specifically, download the `behav_all.zip`, unzip it, then place this directory within `data`
+- To download the voxel activation and timing data, download all files with the the author's `Samples` directory on OSF.
+- You may have to download these `Samples` files one-by-one then move them into a folder called `Samples` that you make yourself (the zip file seemed to have issues on OSF)
 
 5. Open the file `reproducing_decoding_anova_result.py` in an IDE.
 
