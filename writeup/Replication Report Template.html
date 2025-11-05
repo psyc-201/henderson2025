@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Lena L. Kemmelmeier (lkemmelmeier@ucsd.edu)">
-<meta name="dcterms.date" content="2025-10-27">
+<meta name="dcterms.date" content="2025-11-05">
 
 <title>Replication of Henderson et al.&nbsp;(2025, Nature Communications)</title>
 <style>
@@ -60,6 +60,7 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#analysis-plan" id="toc-analysis-plan" class="nav-link" data-scroll-target="#analysis-plan">Analysis Plan</a></li>
   <li><a href="#differences-from-original-study" id="toc-differences-from-original-study" class="nav-link" data-scroll-target="#differences-from-original-study">Differences from Original Study</a></li>
   </ul></li>
+  <li><a href="#project-progress-check-1-reproducability" id="toc-project-progress-check-1-reproducability" class="nav-link" data-scroll-target="#project-progress-check-1-reproducability">Project Progress Check 1 (Reproducability)</a></li>
   <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a>
   <ul class="collapse">
   <li><a href="#data-preparation" id="toc-data-preparation" class="nav-link" data-scroll-target="#data-preparation">Data preparation</a></li>
@@ -95,7 +96,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">October 27, 2025</p>
+      <p class="date">November 5, 2025</p>
     </div>
   </div>
   
@@ -169,9 +170,17 @@ I plan to create a new set of 2D stimuli and analyze them using computer vision 
 </section>
 <section id="differences-from-original-study" class="level3">
 <h3 class="anchored" data-anchor-id="differences-from-original-study">Differences from Original Study</h3>
-<p>I will use the preprocessed voxel activation data they shared instead of reanalyzing the raw fMRI data, and am only reproducing the decoding and ANOVA portions rather than the full fMRI acquisition. I plan to rebuild the binary decoding and ANOVA pipeline in Python as a training exercise. I will not be reproducing the behavioral or data collection parts.</p>
+<p>I will use the preprocessed voxel activation data they shared instead of reanalyzing the raw fMRI data, and am only reproducing the decoding and ANOVA portions rather than the full fMRI acquisition. I plan to rebuild the binary decoding and ANOVA pipeline in Python as a training exercise. I will not be reproducing the behavioral data analysis.</p>
 <p>For the simulation part, I will make a new set of two-dimensional shape stimuli that follow the same general structure as the original ones but vary a different pair of radial frequency components. Instead of the original 4x4 grid, I will use a denser 6x6 grid so the changes between neighboring shapes are smoother. I will then run these new shapes through the GIST and SimCLR models to see how separable the categories are across different boundaries. The goal is not to reproduce participants’ neural or behavioral responses, but to see whether similar structure shows up just from the visual features of the images, while also gaining practice generating and analyzing new stimuli.</p>
 </section>
+</section>
+<section id="project-progress-check-1-reproducability" class="level2">
+<h2 class="anchored" data-anchor-id="project-progress-check-1-reproducability">Project Progress Check 1 (Reproducability)</h2>
+<p><strong>Again, I am assessing whether I can reproduce the reported Task × Boundary interaction effect on decoding accuracy from the three-way ANOVA that included ROI, Task, and Boundary on voxel activation data.</strong> My dependent variable is classifier accuracy computed for each participant across ROI, Task, and Boundary conditions focusing on the ‘near’ trials (trials where the shape to be categorized was close to the decision boundary).</p>
+<p>So far, I’ve implemented the binary decoding pipeline from scratch in Python following their leave-one-run-out cross-validation setup. I use the preprocessed data available on OSF rather than raw fMRI files (which are not available) to obtain these classifier accuracies. It looks like the decoding pipeline works when I examine a few participants, but it does take a bit of time to run all ten, so I plan to let it run on one of our lab’s remote neurocomputing servers. The steps I’ve taken seem to align with what they describe in-text.</p>
+<p>I did try to implement the loading/conversion of the fMRI data completely from scratch, but ended up pivoting to using the authors’ helper functions in converting everything from .mat to .npz because it was a huge headache (they said themselves their method was a bit ‘hacky’ but it worked well for me). Included in their helper functions was also implementation to z-score and mean-center the BOLD data, which I took advantage of. If I have more time later, I plan to go back and troubleshoot my original pipeline to see if I can instead code these parts myself. I think a barrier here is that I am a bit unfamiliar with the way fMRI files are structures – the mat files have so many layers and fields to keep track of.</p>
+<p>I have the implementation of the ANOVA done so I’ll be ready to run it whenever the decoder is done running. I will consider my replication successful if I also find a significant Task × Boundary interaction effect on decoding accuracy (such that Linear-2 &gt; Linear-1 for near trials), as well as a similar effect size (the authors did not report an effect size, but I am computing this post-hoc and hope to find a similar magnitude)</p>
+<p>Additionally, as a visual check, I will plot the overall decoding accuracy patterns shown in Figure 2A–C to confirm that my pattern of results is simlar to the original paper. To make this comparison a bit smoother, I also imported their plotting helpers so that I can check my ability reproduce their exact Figure 2A-C. I expect that the means may shift, but hope the general pattern will hold. To reiterate, I anticipate higher accuracy for the Linear tasks than the Nonlinear task, with a similar pattern of accuracies (and significance) across ROIs.</p>
 </section>
 <section id="results" class="level2">
 <h2 class="anchored" data-anchor-id="results">Results</h2>
