@@ -61,3 +61,4 @@ rsconnect/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+bold_data_henderson2025/
