@@ -11,6 +11,7 @@ Created on Mon Nov  3 14:43:25 2025
 import numpy as np
 import os, sys # used for configuring paths
 import pandas as pd
+from pathlib import Path # for infering path
 
 # actual stats packages
 from sklearn.linear_model import LogisticRegressionCV
@@ -25,7 +26,11 @@ np.random.seed(0) # for reproducibility
 
 #%% Set paths, import helpers from the authors'
 
-root_dir = '/Users/lenakemmelmeier/Documents/GitHub/henderson2025'
+# root_dir = '/Users/lenakemmelmeier/Documents/GitHub/henderson2025'
+
+root_dir = Path(__file__).resolve().parents[1] # infer the root based on where this script is placed
+os.chdir(root_dir)
+
 os.chdir(root_dir)
 package_dir = os.path.join(root_dir, 'decoding_reproducibility') # the parent folder containing code_utils (downloaded from authors)
 
