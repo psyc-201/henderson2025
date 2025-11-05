@@ -12,12 +12,12 @@ cd henderson2025
 2. Download the original authors’ helper function code folder (`code_utils`) from their [GitHub repo](https://github.com/mmhenderson/shapeDim) and place it in the top layer of the repo directory.
 
 3. Create a folder called `data` also inside the top layer of this directory.  
-Within `data`, make subfolders named `Samples` and `DataBehavior`.
 
 4. Download the data files from the authors’ [OSF repo](https://osf.io/fa8jk/) and move them into the appropriate folders:
 - Specifically, download the `behav_all.zip`, unzip it, then place this directory within `data`
 - To download the voxel activation and timing data, download all files with the the author's `Samples` directory on OSF.
-- You may have to download these `Samples` files one-by-one then move them into a folder called `Samples` that you make yourself (the zip file seemed to have issues on OSF)
+- You may have to download these `Samples` files one-by-one then move them ALL into a folder called `Samples` that you make yourself (the zip file seemed to have issues on OSF)
+- Both `Samples` and `DataBehavior` should be nested within `data` 
 
 5. Open the file `reproducing_decoding_anova_result.py` in an IDE.
 
