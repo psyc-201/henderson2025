@@ -9,7 +9,7 @@ git clone https://github.com/psyc-201/henderson2025
 cd henderson2025
 ```
 
-2. Create a folder called `data` also inside the top layer of this directory.  
+2. Create a folder called `data` inside the top layer of this directory.  
 
 3. Download the data files from the authors’ [OSF repo](https://osf.io/fa8jk/) and move them into the appropriate folders:
 - Specifically, download the `behav_all.zip`, unzip it, then place this directory within `data`
