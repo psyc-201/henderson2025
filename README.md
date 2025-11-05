@@ -9,19 +9,17 @@ git clone https://github.com/psyc-201/henderson2025
 cd henderson2025
 ```
 
-2. Download the original authors’ helper function code folder (`code_utils`) from their [GitHub repo](https://github.com/mmhenderson/shapeDim) and place it in the top layer of the repo directory.
+2. Create a folder called `data` also inside the top layer of this directory.  
 
-3. Create a folder called `data` also inside the top layer of this directory.  
-
-4. Download the data files from the authors’ [OSF repo](https://osf.io/fa8jk/) and move them into the appropriate folders:
+3. Download the data files from the authors’ [OSF repo](https://osf.io/fa8jk/) and move them into the appropriate folders:
 - Specifically, download the `behav_all.zip`, unzip it, then place this directory within `data`
 - To download the voxel activation and timing data, download all files with the the author's `Samples` directory on OSF.
 - You may have to download these `Samples` files one-by-one then move them ALL into a folder called `Samples` that you make yourself (the zip file seemed to have issues on OSF)
 - Both `Samples` and `DataBehavior` should be nested within `data` 
 
-5. Open the file `reproducing_decoding_anova_result.py` in an IDE.
+4. Open the file `reproducing_decoding_anova_result.py` in an IDE.
 
-6. Run the script.  
+5. Run the script.  
 It will automatically:
 - Load in the data from the .mat files and convert them into a Python format,
 - Perform decoding within each ROI,
