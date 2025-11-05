@@ -6,7 +6,7 @@ Created on Wed Nov  5 12:31:59 2025
 @author: lenakemmelmeier
 """
 
-#%% Set up environment - load in appropiate packages
+#%% set up environment - load in appropiate packages
 
 import math
 from scipy.stats import f as f_dist, ncf as ncf_dist
@@ -33,6 +33,6 @@ eta_p2, f, lam, Fcrit, power = power_from_F_effect(8.99, 1, 9, alpha=0.05)
 print(f"partial eta^2 = {eta_p2:.3f}, Cohen's f = {f:.3f}, "
       f"lambda = {lam:.2f}, Fcrit = {Fcrit:.3f}, power ≈ {power:.2f}")
 
-
+#%% statsmodel power analysis
 
 
