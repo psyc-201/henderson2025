@@ -1,3 +1,23 @@
+# === Ignore large data and result directories ===
+data/
+
+# === Ignore raw and derived data filetypes ===
+*.mat
+*.npz
+*.npy
+*.h5
+*.hdf5
+*.zip
+*.csv
+*.tsv
+
+# === Keep code and docs ===
+!**/*.py
+!**/*.md
+!LICENSE
+!README.md
+
+
 # History files
 .Rhistory
 .Rapp.history
