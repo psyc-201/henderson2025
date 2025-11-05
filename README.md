@@ -26,3 +26,6 @@ It will automatically:
 - Perform decoding within each ROI,
 - Run a 3-way repeated-measures ANOVA (ROI × Task × Boundary),
 - Save figures and results to the `bold_decoding_anova_results/` folder.
+
+
+As a note for the peer review -- the decoder (for which the ANOVA examines the accuracy), takes many hours to run. Normally I would run this on a remote server!
