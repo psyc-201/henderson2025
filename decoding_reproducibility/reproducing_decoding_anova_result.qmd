@@ -1,12 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Nov  3 14:43:25 2025
-
-@author: lenakemmelmeier
-"""
-
-#%% Set up environment - load in appropiate packages
+Run this section below to import the necessary dependencies and to set the rng seed.
+```{python}
 
 import numpy as np
 import os # used for configuring paths
@@ -25,8 +18,10 @@ from scipy.stats import sem
 
 np.random.seed(0) # for reproducibility
 
-#%% Set paths, import helpers from the authors'
+```
 
+Run this cell below to set paths and import the helper functions from the authors.
+```{python}
 # root_dir = '/Users/lenakemmelmeier/Documents/GitHub/henderson2025'
 
 root_dir = Path(__file__).resolve().parents[1] # infer the root based on where this script is placed
@@ -57,16 +52,21 @@ data_utils.root = data_root
 from code_utils import plot_utils as _plot_utils
 set_all_font_sizes = _plot_utils.set_all_font_sizes
 plot_multi_bars = _plot_utils.plot_multi_bars
+```
 
-#%% Init other variables
-
+Initalize variables
+```{python}
 num_participants = 10 # number of participants
 
 # uses list comprehension to make a list of sub IDs to iterate over later
 sub_ids = [str(i).zfill(2) for i in range(1, num_participants + 1)] # zero pads that sub IDs up to 2 digits (e.g., '1' becomes '01')
 
 boundaries = {"linear1": [[1, 4], [2, 3]], "linear2": [[1, 2], [3, 4]], "nonlinear": [[1, 3], [2, 4]]} # dict for which quartiles correspond to which boundary groupings in the different conditions
+```
 
+
+Run thic cell below to initialize the helper functions I have created
+```{python}
 #%% Helper functions (run this before the cells below!)
 
 # call the authors' helper to load the main trial data
@@ -295,25 +295,31 @@ def build_near_far_masks(labels):
             masks[3]['near'] = use & (~is_corner)
             
     return masks
+```
 
-#%% Decode each subject for Fig 2 (no near/far split)
+Run this cell below to decode the voxel activation data. This is specifically to recreate Figure 2 so there is no no near/far split of the data.
+```{python}
 
 acc_rows_fig2 = [subject_decoding_df(s, boundaries, top_k_voxels=None, mode='fig2') for s in sub_ids]
 acc_long_fig2 = pd.concat(acc_rows_fig2, ignore_index=True)
 acc_long_fig2.to_csv(os.path.join(stats_output_path, 'binary_within_task_acc_long_FIG2.csv'), index=False)
 
-#%% Decode each subject for ANOVA (near only: labels are linear1 vs. linear2)
+```
 
+Run this cell below to decode the data (this uses near only data: labels are linear1 vs. linear2)
+```{python}
 acc_rows_near = [subject_decoding_df(s, boundaries, top_k_voxels=None, mode='anova_near') for s in sub_ids]
 acc_long_near = pd.concat(acc_rows_near, ignore_index=True)
 acc_long_near.to_csv(os.path.join(stats_output_path, 'binary_within_task_acc_long_NEARONLY.csv'), index=False)
+```
 
-#%% Run the 3-way ANOVA (ROI × Task × Boundary) on the data from above
-
+Run this cell below to run a 3-way ANOVA (ROI × Task × Boundary) on the data from above
+```{python}
 aov = run_task_boundary_roi_anova(acc_long_near, out_csv=os.path.join(stats_output_path, 'anova_table_NEARONLY.csv'))
+```
 
-#%% Figure 2A–C style plots (I copied the authors' style here)
-
+Run this cell to recreate Figure 2A–C (I copied the authors' style here -- using their exact figure code just to make a direct comparison)
+```{python}
 fig_outdir = os.path.join(stats_output_path, "figs")
 os.makedirs(fig_outdir, exist_ok=True)
 set_all_font_sizes(12)
@@ -358,3 +364,4 @@ for bnd, title in panels:
     out_png = os.path.join(fig_outdir, f"Figure2_{bnd}.png")
     fh.savefig(out_png, dpi=300, bbox_inches='tight')
     print(f"Saved: {out_png}")
+```
