@@ -8,8 +8,12 @@ Created on Mon Nov  3 14:43:25 2025
 
 #%% Set up environment - load in appropiate packages
 
+from code_utils import data_utils
+
+
 import numpy as np
-import os, sys # used for configuring paths
+import os # used for configuring paths
+import sys # used for configuring paths
 import pandas as pd
 from pathlib import Path # for infering path
 
@@ -23,6 +27,8 @@ from scipy.stats import sem
 # author plotting helpers (matches Fig 2 bar/dot style)
 
 np.random.seed(0) # for reproducibility
+
+
 
 #%% Set paths, import helpers from the authors'
 
@@ -48,7 +54,6 @@ if os.path.isdir(os.path.join(package_dir, 'code_utils')):
         sys.path.insert(0, package_dir)
 
 # now these work because the parent of code_utils/ is on sys.path
-from code_utils import data_utils
 data_root = os.path.join(root_dir, 'data')
 data_utils.root = data_root
 
