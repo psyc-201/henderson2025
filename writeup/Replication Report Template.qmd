@@ -6,6 +6,8 @@ format:
   html:
     toc: true
     toc_depth: 3
+    format:
+    self-contained: true
 ---
 
 <!-- Replication reports should all use this template to standardize reporting across projects.  These reports will be public supplementary materials that accompany the summary report(s) of the aggregate results. -->
@@ -50,7 +52,7 @@ Ten participants (7 female) underwent three fMRI sessions, during which they com
 ### Materials
 
 **Shape Stimuli**
-The below section is adapted from Henderson et al. (see quoted exerpt below). I will follow the same overall procedure for constructing a two-dimensional shape space but will vary a different pair of radial frequency components (RFCs) than those used in the original study. Each RFC defines a sinusoidal modulation of a base circle’s radius as a function of angle, and varying its amplitude changes the prominence of that modulation in the contour. As in the original design, the amplitudes of two RFCs will be systematically varied while the remaining RFCs are held constant. These two amplitude values define the x and y coordinates of a continuous two-dimensional shape space, where each coordinate pair corresponds to a unique silhouette.
+The below section is adapted from Henderson et al. (see quoted excerpt below). I will follow the same overall procedure for constructing a two-dimensional shape space but will vary a different pair of radial frequency components (RFCs) than those used in the original study. Each RFC defines a sinusoidal modulation of a base circle’s radius as a function of angle, and varying its amplitude changes the prominence of that modulation in the contour. As in the original design, the amplitudes of two RFCs will be systematically varied while the remaining RFCs are held constant. These two amplitude values define the x and y coordinates of a continuous two-dimensional shape space, where each coordinate pair corresponds to a unique silhouette.
 
 The manipulation of RFC amplitude defines an x/y grid that spans positions between 0 and 5 arbitrary units, representing relative changes in modulation strength. In contrast to the original 4x4 grid of 16 stimuli with coordinates [0.1, 1.7, 3.3, 4.9], I will generate a 6x6 grid of 36 stimuli covering the same range. Grid positions will be evenly spaced and slightly inset from the edges ([0.1, 1.06, 2.02, 2.98, 3.94, 4.9]). This denser grid sampled from the shape space leads to smoother transitions between neighboring shapes. The overall coordinate system (0–5 range with a midpoint at 2.5) will be the same.
 
@@ -99,7 +101,7 @@ I will use the preprocessed voxel activation data they shared instead of reanaly
 
 For the simulation part, I will make a new set of two-dimensional shape stimuli that follow the same general structure as the original ones but vary a different pair of radial frequency components. Instead of the original 4x4 grid, I will use a denser 6x6 grid so the changes between neighboring shapes are smoother. I will then run these new shapes through the GIST and SimCLR models to see how separable the categories are across different boundaries. The goal is not to reproduce participants’ neural or behavioral responses, but to see whether similar structure shows up just from the visual features of the images, while also gaining practice generating and analyzing new stimuli.
 
-## Project Progress Check 2 (Reproducability)
+## Progress Check 2 (reproducibility)
 **Again, I am assessing whether I can reproduce the reported Task × Boundary interaction effect on decoding accuracy from the three-way ANOVA that included ROI, Task, and Boundary on voxel activation data.** My dependent variable is classifier accuracy computed for each participant across ROI, Task, and Boundary conditions focusing on the 'near' trials (trials where the shape to be categorized was close to the decision boundary). 
 
 So far, I've implemented the binary decoding pipeline from scratch in Python following their leave-one-run-out cross-validation setup. I use the preprocessed data available on OSF rather than raw fMRI files (which are not available) to obtain these classifier accuracies. It looks like the decoding pipeline works when I examine a few participants, but it does take a bit of time to run all ten, so I plan to let it run on one of our lab's remote neurocomputing servers. The steps I've taken seem to align with what they describe in-text.
@@ -108,21 +110,23 @@ I did try to implement the loading/conversion of the fMRI data completely from s
 
 I have the implementation of the ANOVA done so I'll be ready to run it whenever the decoder is done running. I will consider my replication successful if I also find a significant Task × Boundary interaction effect on decoding accuracy (such that Linear-2 > Linear-1 for near trials), as well as a similar effect size (the authors did not report an effect size, but I am computing this post-hoc and hope to find a similar magnitude)
 
-Additionally, as a visual check, I will plot the overall decoding accuracy patterns shown in Figure 2A–C to confirm that my pattern of results is simlar to the original paper. To make this comparison a bit smoother, I also imported their plotting helpers so that I can check my ability reproduce their exact Figure 2A-C. I expect that the means may shift, but hope the general pattern will hold. To reiterate, I anticipate higher accuracy for the Linear tasks than the Nonlinear task, with a similar pattern of accuracies (and significance) across ROIs.
+Additionally, as a visual check, I will plot the overall decoding accuracy patterns shown in Figure 2A–C to confirm that my pattern of results is simlar to the original paper. To make this comparison a bit smoother, I also imported their plotting helpers so that I can check my ability to reproduce their exact Figure 2A-C. I expect that the means may shift, but hope the general pattern will hold. To reiterate, I anticipate higher accuracy for the Linear tasks than the Nonlinear task, with a similar pattern of accuracies (and significance) across ROIs.
 
-## Project Progress Check 3 (Continuing Reproducability + Beginning Simulation)
+## Progress Check 3 (Continuing reproducibility + Beginning Simulation)
 As an update from the last progress check, I tried to implement the authors' conversion of the mat files to the h5py format from scratch, but it was still a bit of a headache/ordeal. However, it is in progress in that I have the Matlab script that compiles the data in a Python-friendly way successfully, but I haven't finished editing my decoding script to replace my calls to the authors' helper functions, so I've still been using the version that has the authors' helpers just to keep forward momentum. I hope to revisit this before the final project deadline to see if I can truly re-implement the whole pipeline from scratch, but I feel like it's less of a priority/a less valuable experience for me.
 
-I finished training the binary decoders, and judging by Figures 2A-C (attached below), the pattern of data in my reproducability attempt generally match theirs:
+I finished training the binary decoders, and judging by Figures 2A-C (attached below), the pattern of data in my reproducibility attempt generally match theirs:
 
-I also ran the 3-way ANOVA (ROI × Task × Boundary) on the classification accuracy from the binary decoder above (includes data for near-trials only, labels: Linear1 vs. Linear2). Like the authors, I detected a significant interaction between classifier boundary and task, such that the classifier performed better when the boundary matched th one that was currently activity in the task (p=.0X). This effect was of a _____ effect size, which is similar to the ___ effect size I calculated based off the results reported by the authors. In sum, I would say my reproducability attempt was successful.
+I also ran the 3-way ANOVA (ROI × Task × Boundary) on the classification accuracy from the binary decoder above (includes data for near-trials only, labels: Linear1 vs. Linear2). Like the authors, I detected a significant interaction between classifier boundary and task, such that the classifier performed better when the boundary matched the one that was currently activity in the task (p=.0X). This effect was of a _____ effect size, which is similar to the ___ effect size I calculated based off the results reported by the authors. In sum, I would say my reproducibility attempt was successful.
 
-I also began the simulation portion of my experience (creating a new batch of stimuli). Specifically, I created the 36 images that are a part of the 6x6 array I described above (see image below, where I arranged them all in the grid). The authors had about a dozen different scripts in Matlab that they used for stimulus generation. I re-purposed/implemented the legacy functions they used (giivng proper credit), and basically re-consolidated all the functionality to one script. I varied the amplitude of 2 RFCs different from the ones the authors used. I also chose to use a different "shape family." My next step will be running the images through the computer vision models.
+I also began the simulation portion of my experience (creating a new batch of stimuli). Specifically, I created the 36 images that are a part of the 6x6 array I described above (see image below, where I arranged them all in the grid). The authors had about a dozen different scripts in Matlab that they used for stimulus generation. I re-purposed/implemented the legacy functions they used (giving proper credit), and basically re-consolidated all the functionality to one script. I varied the amplitude of 2 RFCs different from the ones the authors used. I also chose to use a different "shape family." My next step will be running the images through the computer vision models.
 
+![6×6 RFC blob grid.](../stimuli/new_blob_stim/grid_montage.png){#fig-blobgrid fig-cap="Blob grid (6×6) spanning 0–5 RFC amplitudes on each axis." fig-alt="36 grayscale blob silhouettes arranged in a 6×6 grid." width="75%" fig-align="center"}
 
+**Link to Preregistration** [Google Drive - ](https://github.com/Lena-Kemmelmeier/henderson2025)
 
 -----
-As a side note, I've doing most of my coding (especially for the classification) within .py files in the Spyder IDE. I do have a .qmd version of the classification pipeline (understand this is more in line with the class objectives, especially because Quarto/Pixi lend themselves to reproducability), but it's been MUCH easier for me to crash-test my code in Spyder's IDE. Moreover, I ran the models on one of the external neurocomputing servers in a .py file because it was easiest for me. Once everything is finalized, I'll update/shift any scripts over to be .qmd.
+As a side note, I've doing most of my Python coding (especially for the classification) within .py files in the Spyder IDE. I do have a .qmd version of the classification pipeline (understand this is more in line with the class objectives, especially because Quarto/Pixi lend themselves to reproducibility), but it's been MUCH easier for me to crash-test my code in Spyder's IDE. Moreover, I ran the models on one of the external neurocomputing servers in a .py file because it was easiest for me. Once everything is finalized, I'll update/shift any scripts over to be .qmd.
 
 ## Results
 
