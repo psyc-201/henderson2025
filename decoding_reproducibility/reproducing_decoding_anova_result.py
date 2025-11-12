@@ -179,6 +179,63 @@ def decode_within_task_one_roi_replica(data_concat, quad_labs, task_labs, cv_lab
 
     return (pred[mg] == y[mg]).mean()
 
+def decode_with_subset(data_concat, quad_labs, task_labs, cv_labs, is_main_grid, task_id, boundary_name, subset_mask):
+    
+    # slice to requested task
+    tinds = (task_labs == task_id)
+    if not np.any(tinds):
+        return np.nan
+
+    X = data_concat[tinds, :]
+    q = quad_labs[tinds]
+    runs = cv_labs[tinds]
+    mg = is_main_grid[tinds]
+    
+    # convert quad → class labels
+    y = make_binary_labels(q, boundary_name)
+    if (y <= 0).any():
+        return np.nan
+    
+    # trial-wise mean center
+    X = X - X.mean(axis=1, keepdims=True)
+    X = np.asarray(X, dtype=np.float64)
+
+    pred = np.full(len(X), np.nan)
+    c_values = np.logspace(-9, 1, 20)
+    logo = LeaveOneGroupOut()
+
+    # CV loop
+    for cv in np.unique(runs):
+        tr = (runs != cv) & mg
+        te = (runs == cv)
+        if tr.sum() < 4 or np.unique(y[tr]).size < 2 or te.sum() == 0:
+            continue
+
+        inner_groups = runs[tr]
+        inner_cv = logo.split(X[tr], y[tr], groups=inner_groups)
+
+        clf = LogisticRegressionCV(
+            cv=inner_cv,
+            Cs=c_values,
+            multi_class='multinomial',
+            solver='lbfgs',
+            penalty='l2',
+            n_jobs=-1,
+            max_iter=20000,
+            tol=1e-3
+        )
+        clf.fit(X[tr], y[tr])
+        pred[te] = clf.predict(X[te])
+
+    # final mask = requested subset + main-grid
+    subset = subset_mask[tinds] & mg
+    valid = (~np.isnan(pred)) & subset
+    if valid.sum() == 0:
+        return np.nan
+
+    return (pred[valid] == y[valid]).mean()
+
+
 def subject_decoding_df_replica(sub_id):
     print(f"[decode] Started decoding for subject {sub_id}")
 
@@ -186,46 +243,53 @@ def subject_decoding_df_replica(sub_id):
     main_rois, main_lab, main_roi_names = load_main_data(sub_id)
     rep_rois, rep_lab, rep_roi_names = load_repeat_data(sub_id)
 
-    # keep ROI name list consistent with authors' plotting (basically renaming IPS)
     roi_names = rename_ips(main_roi_names)
     n_rois = len(roi_names)
 
-    # concat labels (main w/ repeat)
     concat_labels = pd.concat([main_lab, rep_lab], axis=0)
 
-    # leave-one-run-out groups: offset REPEAT runs so they don't collide with MAIN
     cv_main = main_lab['run_overall'].to_numpy().astype(int)
-    cv_rep = rep_lab['run_overall'].to_numpy().astype(int) + cv_main.max()
+    cv_rep  = rep_lab['run_overall'].to_numpy().astype(int) + cv_main.max()
     cv_labs = np.concatenate([cv_main, cv_rep], axis=0)
 
-    # label vectors (+ remap non-1/2/3 tasks to 4 = repeat)
-    # I had to fix this... got the labels wrong the first time!!
     is_main_grid = (concat_labels['is_main_grid'].to_numpy().astype(int) == 1)
-    quad_labs = concat_labels['quadrant'].to_numpy().astype(int)
-    task_labs = concat_labels['task'].to_numpy().astype(int)
-    task_labs[~np.isin(task_labs, [1, 2, 3])] = 4
+    quad_labs    = concat_labels['quadrant'].to_numpy().astype(int)
+    task_labs    = concat_labels['task'].to_numpy().astype(int)
+    task_labs[~np.isin(task_labs, [1,2,3])] = 4
 
-    # build ROI matrices by row-concatenating MAIN then REPEAT
     roi_arrays = []
     for ri in range(n_rois):
-        Xm = main_rois[ri]  # [nTrials_main x nVox]
-        Xr = rep_rois[ri]   # [nTrials_rep  x nVox]
+        Xm = main_rois[ri]
+        Xr = rep_rois[ri]
         roi_arrays.append(np.concatenate([Xm, Xr], axis=0))
 
-    # decode per ROI × task (1/2/3) × boundary
     rows = []
     for rname, X in zip(roi_names, roi_arrays):
-        for task_id in (1, 2, 3):  # three categorization tasks for Fig 2
-            for bname in ('linear1', 'linear2', 'nonlinear'):
-                acc = decode_within_task_one_roi_replica(
+
+        for task_id in (1, 2):  # only linear tasks used for near/far analysis
+            for bname in ('linear1', 'linear2'):
+
+                near_quads = boundaries[bname][0]
+                far_quads  = boundaries[bname][1]
+
+                near_mask = np.isin(quad_labs, near_quads)
+                far_mask  = np.isin(quad_labs, far_quads)
+
+                acc_near = decode_with_subset(
                     X, quad_labs, task_labs, cv_labs, is_main_grid,
-                    task_id, bname
+                    task_id, bname, subset_mask=near_mask
                 )
-                rows.append([sub_id, rname, task_id_to_name[task_id], bname, acc])
+
+                acc_far = decode_with_subset(
+                    X, quad_labs, task_labs, cv_labs, is_main_grid,
+                    task_id, bname, subset_mask=far_mask
+                )
+
+                rows.append([sub_id, rname, task_id_to_name[task_id], bname, 'near', acc_near])
+                rows.append([sub_id, rname, task_id_to_name[task_id], bname, 'far',  acc_far])
 
     print(f"[decode] Finished decoding for subject {sub_id}")
-    
-    return pd.DataFrame(rows, columns=['sub','ROI','Task','Boundary','ACC']) # return the df
+    return pd.DataFrame(rows, columns=['sub','ROI','Task','Boundary','Dist','ACC'])
 
 #%% Decode data for each subject for Fig 2 (no near/far split of trials!)
 
@@ -236,29 +300,33 @@ acc_long_fig2.to_csv(os.path.join(stats_output_path, 'binary_withintask_ACC_long
 #%% Run the 3-way ANOVA (ROI × Task × Boundary) - near only trials, classify either as linear1 or linear2
 
 # load saved decoding csv
-acc_long_fig2 = pd.read_csv(os.path.join(stats_output_path, 'binary_withintask_ACC_long_FIG2_replica.csv'))
+acc_long_fig2.to_csv(os.path.join(stats_output_path, 'binary_withintask_ACC_long_NEARFAR_replica.csv'), index=False)
 
 def run_task_boundary_roi_anova(df_long, out_csv, print_table=False):
 
     df_ = df_long.copy()
 
-    # keep only linear tasks/boundaries
-    df_ = df_[df_['Task'].isin(['linear1','linear2']) & df_['Boundary'].isin(['linear1','linear2'])].copy()
-    df_ = df_.dropna(subset=['ACC'])  # in case any ROI/task/boundary produced NaN (e.g., too few trials/classes)
+    # keep only linear tasks/boundaries AND near-only trials
+    df_ = df_[df_['Task'].isin(['linear1','linear2']) &
+              df_['Boundary'].isin(['linear1','linear2']) &
+              (df_['Dist'] == 'near')].copy()
+
+    df_ = df_.dropna(subset=['ACC'])  # in case any ROI/task/boundary produced NaN
 
     # cast to strings for AnovaRM
     for col in ['sub','ROI','Task','Boundary']:
         df_[col] = df_[col].astype(str)
 
     # fit 3-way repeated-measures ANOVA
-    aov = AnovaRM(df_, depvar='ACC', subject='sub', within=['ROI','Task','Boundary']).fit()
+    aov = AnovaRM(df_, depvar='ACC', subject='sub',
+                  within=['ROI','Task','Boundary']).fit()
 
     # save the ANOVA table
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
     aov.anova_table.to_csv(out_csv)
 
     if print_table:
-        print("\n=== Full 3-way ANOVA (ROI × Task × Boundary) ===")
+        print("\n=== Full 3-way ANOVA (ROI × Task × Boundary) — NEAR ONLY ===")
         print(aov.anova_table)
         print("\n--- Task × Boundary interaction ---")
         print(aov.anova_table.loc[aov.anova_table.index.str.contains('Task:Boundary')])
@@ -266,10 +334,14 @@ def run_task_boundary_roi_anova(df_long, out_csv, print_table=False):
     return aov
 
 # run anova + save outputs
-aov = run_task_boundary_roi_anova(acc_long_fig2, out_csv=os.path.join(stats_output_path, 'anova_table_LINEAR_replica.csv'), print_table=False)
+aov = run_task_boundary_roi_anova(
+    acc_long_fig2,
+    out_csv=os.path.join(stats_output_path, 'anova_table_LINEAR_NEARONLY_replica.csv'),
+    print_table=False
+)
 
-# load in this csv of the anova results
-anova_result = pd.read_csv(os.path.join(stats_output_path, 'anova_table_LINEAR_replica.csv'))
+# load the csv of the anova results
+anova_result = pd.read_csv(os.path.join(stats_output_path, 'anova_table_LINEAR_NEARONLY_replica.csv'))
 print(anova_result)
 
 #%% Figure 2A–C style plots (copied authors' style)
