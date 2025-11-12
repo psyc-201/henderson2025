@@ -15,6 +15,7 @@ import pandas as pd
 from pathlib import Path # for infering path
 
 # actual stats packages
+from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.linear_model import LogisticRegressionCV
 from statsmodels.stats.anova import AnovaRM
 from sklearn.feature_selection import f_classif
@@ -103,19 +104,39 @@ def make_binary_labels(q_arr, boundary_name, boundaries):
 
 # leave-one-run-out decoding within task, per ROI
 def decode_within_task_one_roi(X, y, runs, is_main_mask):
-    
-    clf = LogisticRegressionCV(Cs=10, cv=3, penalty='l2', solver='liblinear', max_iter=200, n_jobs=1, class_weight='balanced')
+    # nested CV: inner = LeaveOneGroupOut on the training runs
+    Cs = np.logspace(-9, 1, 20)
     accs = []
+    logo = LeaveOneGroupOut()
     for r in np.unique(runs):
-        tr = (runs != r) & is_main_mask
-        te = (runs == r) & is_main_mask  # score on main-grid only
+        tr = (runs != r) & is_main_mask      # TRAIN: main-grid only
+        te = (runs == r)                     # TEST: held-out run (we'll score on main-grid only)
+
         if tr.sum() < 4 or np.unique(y[tr]).size < 2 or te.sum() == 0:
             continue
+
+        # inner CV groups are per-trial run labels on the training set
+        inner_cv = logo.split(X[tr], y[tr], groups=runs[tr])
+
+        clf = LogisticRegressionCV(
+            Cs=Cs,
+            cv=inner_cv,
+            penalty='l2',
+            solver='lbfgs',
+            multi_class='multinomial',
+            max_iter=1000,
+            n_jobs=-1
+        )
         clf.fit(X[tr], y[tr])
-        accs.append((clf.predict(X[te]) == y[te]).mean())
+
+        # score only on main-grid trials of the held-out run (to match paper)
+        te_main = te & is_main_mask
+        accs.append((clf.predict(X[te_main]) == y[te_main]).mean())
     return float(np.mean(accs)) if accs else np.nan
 
 def subject_decoding_df(sub_id, boundaries, top_k_voxels=None, mode='fig2'):
+    
+    print(f"[decode] Started decoding for subject {sub_id}")
 
     # load main and repeat data
     main_rois, main_label, main_roi_names = load_main_data(sub_id)
@@ -139,6 +160,9 @@ def subject_decoding_df(sub_id, boundaries, top_k_voxels=None, mode='fig2'):
         
         # X_rep_roi: [nTrials x nVox] (already run-zscored & trial-averaged by authors)
         Xr = X_rep_roi[is_main_grid_rep, :]
+        # Per-trial mean-centering across voxels
+        Xr = Xr - Xr.mean(axis=1, keepdims=True)
+        
         qr = quads_rep[is_main_grid_rep]
 
         if top_k_voxels in (None, 'all'):
@@ -195,13 +219,21 @@ def subject_decoding_df(sub_id, boundaries, top_k_voxels=None, mode='fig2'):
             valid = (y >= 0)
             yv, rv = y[valid], run_t[valid]
 
-            # simple all-True mask because we've already subset trials
-            is_main_mask = np.ones_like(yv, dtype=bool)
-
+            # main-grid mask aligned to the CURRENT subset (tmask + valid)
+            is_main_mask = is_main_grid_main[tmask][valid].astype(bool)
+            
             for rname, X_roi in zip(roi_names, roi_arrays):
                 Xv = X_roi[tmask, :][valid]
+                # Per-trial mean-centering across voxels
+                Xv = Xv - Xv.mean(axis=1, keepdims=True)
+            
+                # sanity check: all vectors align
+                assert is_main_mask.shape[0] == Xv.shape[0] == yv.shape[0] == rv.shape[0]
+            
                 acc = decode_within_task_one_roi(Xv, yv, rv, is_main_mask=is_main_mask)
+            
                 rows.append([sub_id, rname, task_id_to_name[task_id], bname, acc])
+
 
     print(f"[decode] Finished decoding for subject {sub_id}")
     return pd.DataFrame(rows, columns=['sub','ROI','Task','Boundary','ACC'])
@@ -297,22 +329,35 @@ def build_near_far_masks(labels):
     return masks
 
 #%% Decode each subject for Fig 2 (no near/far split)
+# Run this cell for binary logistic regression classification. 
+# The classifier was trained to predict the category of the shape in the trial according to the Linear1, Linear2, OR, Nonlinear decision rule. 
+# There is no split of 'near' vs. 'far' trials here (pooling data across all). 
+# This will be data used to test our ability to recreate Fig 2A-C.
 
 acc_rows_fig2 = [subject_decoding_df(s, boundaries, top_k_voxels=None, mode='fig2') for s in sub_ids]
 acc_long_fig2 = pd.concat(acc_rows_fig2, ignore_index=True)
 acc_long_fig2.to_csv(os.path.join(stats_output_path, 'binary_within_task_acc_long_FIG2.csv'), index=False)
 
 #%% Decode each subject for ANOVA (near only: labels are linear1 vs. linear2)
+# Run this cell below to perform binary classification. 
+# Here, the features are the voxel activation data for 'near' trials only (when the shape to categorize was one of the eight closest to the decision boundary in the main grid) across the ROIs. 
+# The labels are Linear1 vs. Linear 2.
 
 acc_rows_near = [subject_decoding_df(s, boundaries, top_k_voxels=None, mode='anova_near') for s in sub_ids]
 acc_long_near = pd.concat(acc_rows_near, ignore_index=True)
 acc_long_near.to_csv(os.path.join(stats_output_path, 'binary_within_task_acc_long_NEARONLY.csv'), index=False)
 
 #%% Run the 3-way ANOVA (ROI × Task × Boundary) on the data from above
+# Run this cell below to run a 3-way ANOVA (ROI × Task × Boundary) on the classification accuracy from the binary decoder above (data for near-trials only, labels: Linear1 vs. Linear2). 
+# The authors found that, in examing the data for near trials only , that there was be an interaction between classifier boundary and task, 
+# such that the classifier performed better better when the boundary matched the one that was currently active in the task (a significant effect size of Task x Boundary).
 
 aov = run_task_boundary_roi_anova(acc_long_near, out_csv=os.path.join(stats_output_path, 'anova_table_NEARONLY.csv'))
 
 #%% Figure 2A–C style plots (I copied the authors' style here)
+# Run this cell to recreate Figure 2A–C (I copied the authors' style here by importing their figure code. 
+# Figure this was best-suited to side=by-side comparison). 
+# The idea here is that I should be able to recreate their general pattern of results, such that binary classification accuracy will be highest in V1 and V2 and lowest in LO2 and IPS.
 
 fig_outdir = os.path.join(stats_output_path, "figs")
 os.makedirs(fig_outdir, exist_ok=True)

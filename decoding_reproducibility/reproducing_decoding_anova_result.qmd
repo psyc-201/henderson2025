@@ -1,3 +1,6 @@
+Need to figure out how to ideally get this to render as well (and use the environment packages)
+Need to make sure pixi environments are actually compatible
+
 Run this section below to import the necessary dependencies and to set the rng seed.
 ```{python}
 
@@ -22,8 +25,6 @@ np.random.seed(0) # for reproducibility
 
 Run this cell below to set paths and import the helper functions from the authors.
 ```{python}
-# root_dir = '/Users/lenakemmelmeier/Documents/GitHub/henderson2025'
-
 root_dir = Path(__file__).resolve().parents[1] # infer the root based on where this script is placed
 os.chdir(root_dir)
 
@@ -65,7 +66,7 @@ boundaries = {"linear1": [[1, 4], [2, 3]], "linear2": [[1, 2], [3, 4]], "nonline
 ```
 
 
-Run thic cell below to initialize the helper functions I have created
+Run this cell below to initialize the helper functions I have created
 ```{python}
 #%% Helper functions (run this before the cells below!)
 
@@ -160,7 +161,7 @@ def subject_decoding_df(sub_id, boundaries, top_k_voxels=None, mode='fig2'):
         if m.sum() == 0:
             continue
         
-        roi_arrays.append(X_main_roi[:, m])   # still [nTrials x nKeptVox]
+        roi_arrays.append(X_main_roi[:, m])  # still [nTrials x nKeptVox]
         roi_names_kept.append(rname)
         
     roi_names = roi_names_kept
@@ -297,7 +298,7 @@ def build_near_far_masks(labels):
     return masks
 ```
 
-Run this cell below to decode the voxel activation data. This is specifically to recreate Figure 2 so there is no no near/far split of the data.
+Run this cell for binary logistic regression classification. The classifier was trained to predict the category of the shape in the trial according to the Linear1, Linear2, OR, Nonlinear decision rule. There is no split of 'near' vs. 'far' trials here (pooling data across all). This will be data used to test our ability to recreate Fig 2A-C.
 ```{python}
 
 acc_rows_fig2 = [subject_decoding_df(s, boundaries, top_k_voxels=None, mode='fig2') for s in sub_ids]
@@ -306,19 +307,21 @@ acc_long_fig2.to_csv(os.path.join(stats_output_path, 'binary_within_task_acc_lon
 
 ```
 
-Run this cell below to decode the data (this uses near only data: labels are linear1 vs. linear2)
+Run this cell below to perform binary classification. Here, the features are the voxel activation data for 'near' trials only (when the shape to categorize was one of the eight closest to the decision boundary in the main grid) across the ROIs. The labels are Linear1 vs. Linear 2.
 ```{python}
-acc_rows_near = [subject_decoding_df(s, boundaries, top_k_voxels=None, mode='anova_near') for s in sub_ids]
+for s in sub_ids
+    acc_rows_near = subject_decoding_df(s, boundaries, top_k_voxels=None, mode='anova_near')
+
 acc_long_near = pd.concat(acc_rows_near, ignore_index=True)
 acc_long_near.to_csv(os.path.join(stats_output_path, 'binary_within_task_acc_long_NEARONLY.csv'), index=False)
 ```
 
-Run this cell below to run a 3-way ANOVA (ROI × Task × Boundary) on the data from above
+Run this cell below to run a 3-way ANOVA (ROI × Task × Boundary) on the classification accuracy from the binary decoder above (data for near-trials only, labels: Linear1 vs. Linear2). The authors found that, in examing the data for near trials only , that there was be an interaction between classifier boundary and task, such that the classifier performed better better when the boundary matched the one that was currently active in the task (a significant effect size of Task x Boundary).
 ```{python}
 aov = run_task_boundary_roi_anova(acc_long_near, out_csv=os.path.join(stats_output_path, 'anova_table_NEARONLY.csv'))
 ```
 
-Run this cell to recreate Figure 2A–C (I copied the authors' style here -- using their exact figure code just to make a direct comparison)
+Run this cell to recreate Figure 2A–C (I copied the authors' style here by importing their figure code. Figure this was best-suited to side=by-side comparison). The idea here is that I should be able to recreate their general pattern of results, such that binary classification accuracy will be highest in V1 and V2 and lowest in LO2 and IPS.
 ```{python}
 fig_outdir = os.path.join(stats_output_path, "figs")
 os.makedirs(fig_outdir, exist_ok=True)
