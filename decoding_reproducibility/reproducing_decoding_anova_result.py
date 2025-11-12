@@ -262,69 +262,85 @@ _ = run_task_boundary_roi_anova(acc_long_fig2,
                                 out_csv=os.path.join(stats_output_path, 'anova_table_LINEAR_replica.csv'),
                                 print_table=False)
 
-#%% Figure 2A–C style plots (copied authors' style helpers)
+#%% Figure 2A–C style plots (copied authors' style)
 
+import numpy as np
+import pandas as pd
+import os
+from pathlib import Path
+import matplotlib.pyplot as plt
+from scipy.stats import sem
+
+# paths
+root_dir = Path(__file__).resolve().parents[1]
+stats_output_path = os.path.join(root_dir, 'bold_decoding_anova_results')
 fig_outdir = os.path.join(stats_output_path, "figs")
 os.makedirs(fig_outdir, exist_ok=True)
-set_all_font_sizes(12)
 
-# panels in order (Fig. 2A–C)
+# load your saved decoding CSV (already created by your pipeline)
+acc_long_fig2 = pd.read_csv(os.path.join(stats_output_path, 'binary_withintask_ACC_long_FIG2_replica.csv'))
+
+# plotting config
+roi_order   = ['V1','V2','V3','V3AB','hV4','LO1','LO2','IPS']
+task_order  = ['linear1','linear2','nonlinear']
+task_labels = {'linear1':'Linear-1 Task','linear2':'Linear-2 Task','nonlinear':'Nonlinear Task'}
+task_colors = {'linear1':'#1f4e79', 'linear2':'#2e86c1', 'nonlinear':'#76d7c4'}  # dark blue, blue, teal
+chance_y    = 0.5
+
+# small horizontal offsets so the three tasks don’t overlap
+offsets = {'linear1': -0.18, 'linear2': 0.0, 'nonlinear': +0.18}
+
+# panel defs to match A–C
 panels = [
     ('linear1',  'A  Binary classifier: Predict "Linear-1" category'),
     ('linear2',  'B  Binary classifier: Predict "Linear-2" category'),
     ('nonlinear','C  Binary classifier: Predict "Nonlinear" category')
 ]
 
-task_order  = ['linear1','linear2','nonlinear']
-task_labels = ['Linear-1 Task','Linear-2 Task','Nonlinear Task']
-roi_order   = ['V1','V2','V3','V3AB','hV4','LO1','LO2','IPS']
+def plot_panel(boundary, title, show_legend=False):
+    df_b = acc_long_fig2.query("Boundary == @boundary and Task in @task_order").copy()
 
-for bnd, title in panels:
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.axhline(chance_y, color='gray', linewidth=1.0)  # chance line
 
-    # subset to this boundary
-    df_b = acc_long_fig2[acc_long_fig2['Boundary'] == bnd].copy()
-    df_b = df_b[df_b['Task'].isin(task_order)]
+    x_base = np.arange(len(roi_order))
 
-    # mean/sem arrays [nROI x nTask]
-    rois_here = [r for r in roi_order if r in df_b['ROI'].unique()]
-    means = np.zeros((len(rois_here), len(task_order)))
-    errs  = np.zeros((len(rois_here), len(task_order)))
+    # per-task plotting
+    for task in task_order:
+        df_t = df_b[df_b['Task'] == task]
+        # subject-level gray dots
+        for s, df_s in df_t.groupby('sub'):
+            y = df_s.set_index('ROI').reindex(roi_order)['ACC'].values
+            x = x_base + offsets[task]
+            ax.scatter(x, y, s=12, color='#BFBFBF', zorder=1)  # light gray per-subject dots
 
-    # subject-level points organized as [nSub x nROI x nTask]
-    subs = sorted(df_b['sub'].unique().tolist())
-    pts  = np.full((len(subs), len(rois_here), len(task_order)), np.nan)
+        # means and sem
+        g = df_t.groupby('ROI')['ACC']
+        means = g.mean().reindex(roi_order).values
+        errors = g.apply(lambda x: sem(x, nan_policy='omit')).reindex(roi_order).values
+        x = x_base + offsets[task]
 
-    for j, t in enumerate(task_order):
-        grp = df_b[df_b['Task'] == t]
-        g = grp.groupby('ROI')['ACC']
-        m = g.mean().reindex(rois_here)
-        e = g.apply(lambda x: sem(x, nan_policy='omit')).reindex(rois_here)
-        means[:, j] = m.values
-        errs[:,  j] = e.values
+        # colored mean dot + error bar
+        ax.errorbar(
+            x, means, yerr=errors, fmt='o', markersize=6, capsize=3,
+            linewidth=1.2, color=task_colors[task], ecolor=task_colors[task], label=task_labels[task], zorder=3
+        )
 
-        # fill per-subject points so we can draw the paired lines
-        for si, s in enumerate(subs):
-            gv = grp[grp['sub'] == s].set_index('ROI')['ACC'].reindex(rois_here)
-            pts[si, :, j] = gv.values
+    ax.set_xticks(x_base)
+    ax.set_xticklabels(roi_order)
+    ax.set_ylim(0.4, 1.0)
+    ax.set_ylabel('Classifier accuracy')
+    ax.set_title(title)
+    if show_legend:
+        leg = ax.legend(frameon=False, loc='upper right')
+    fig.tight_layout()
+    return fig, ax
 
-    # authors’ bar/point overlay
-    fh = plot_multi_bars(
-        means,
-        err_data=errs,
-        point_data=pts,
-        add_ss_lines=True,
-        xticklabels=rois_here,
-        ylabel='Classifier accuracy',
-        ylim=[0.4, 1.0],
-        horizontal_line_pos=0.5,
-        title=title,
-        legend_labels=task_labels,
-        legend_overlaid=False,
-        legend_separate=False,
-        err_capsize=3,
-        fig_size=(10,4)
-    )
-
-    out_png = os.path.join(fig_outdir, f"Figure2_{bnd}_replica.png")
-    fh.savefig(out_png, dpi=300, bbox_inches='tight')
+# make the three panels; show legend on the last one (like your screenshot)
+for i, (bnd, ttl) in enumerate(panels, 1):
+    fig, ax = plot_panel(bnd, ttl, show_legend=(bnd == 'nonlinear'))
+    out_png = os.path.join(fig_outdir, f"Figure2_{bnd}_replica_DOTSEM.png")
+    fig.savefig(out_png, dpi=300, bbox_inches='tight')
     print(f"Saved: {out_png}")
+    plt.show(fig)
+
