@@ -21,6 +21,7 @@ from statsmodels.stats.anova import AnovaRM
 
 # for plotting
 from scipy.stats import sem
+import matplotlib.pyplot as plt
 # author plotting helpers (matches Fig 2 bar/dot style)
 
 import warnings
@@ -29,9 +30,12 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 np.random.seed(0)  # for reproducibility
 
-# convergence controls (keep authors' pipeline, just make solver more forgiving)
-MAX_ITER = 20000
-TOL = 1e-3
+
+# paths
+root_dir = Path(__file__).resolve().parents[1]
+stats_output_path = os.path.join(root_dir, 'bold_decoding_anova_results')
+fig_outdir = os.path.join(stats_output_path, "figs")
+os.makedirs(fig_outdir, exist_ok=True)
 
 #%% Set paths, import helpers from the authors'
 
@@ -108,10 +112,7 @@ def make_binary_labels(q_arr, boundary_name):
     y[np.isin(q_arr, g1)] = 2
     return y
 
-#%% Direct-replication decoding core (matches authors’ logic exactly)
-
-def decode_within_task_one_roi_replica(data_concat, quad_labs, task_labs, cv_labs, is_main_grid,
-                                       task_id, boundary_name):
+def decode_within_task_one_roi_replica(data_concat, quad_labs, task_labs, cv_labs, is_main_grid, task_id, boundary_name):
     # subset to the current task (1,2,3; task 4 = repeat, not decoded for Fig 2)
     tinds = (task_labs == task_id)
     if not np.any(tinds):
@@ -152,6 +153,7 @@ def decode_within_task_one_roi_replica(data_concat, quad_labs, task_labs, cv_lab
         # inner CV: LOGO on the training runs only (groups = run ids)
         inner_groups = runs[tr]
         inner_cv = logo.split(X[tr], y[tr], groups=inner_groups)
+        
 
         clf = LogisticRegressionCV(
             cv=inner_cv,
@@ -160,8 +162,8 @@ def decode_within_task_one_roi_replica(data_concat, quad_labs, task_labs, cv_lab
             solver='lbfgs',
             penalty='l2',
             n_jobs=-1,
-            max_iter=MAX_ITER,  # increased iter budget
-            tol=TOL             # slightly looser tolerance
+            max_iter=20000, # increased iter budget (more than author)
+            tol=1e-3 # slightly looser tolerance than authors
         )
         clf.fit(X[tr], y[tr])
 
@@ -182,24 +184,25 @@ def subject_decoding_df_replica(sub_id):
 
     # load main and repeat data
     main_rois, main_lab, main_roi_names = load_main_data(sub_id)
-    rep_rois,  rep_lab,  rep_roi_names  = load_repeat_data(sub_id)
+    rep_rois, rep_lab, rep_roi_names = load_repeat_data(sub_id)
 
-    # keep ROI name list consistent with authors' plotting
+    # keep ROI name list consistent with authors' plotting (basically renaming IPS)
     roi_names = rename_ips(main_roi_names)
     n_rois = len(roi_names)
 
-    # concatenate labels (MAIN on top of REPEAT)
+    # concat labels (main w/ repeat)
     concat_labels = pd.concat([main_lab, rep_lab], axis=0)
 
     # leave-one-run-out groups: offset REPEAT runs so they don't collide with MAIN
     cv_main = main_lab['run_overall'].to_numpy().astype(int)
-    cv_rep  = rep_lab['run_overall'].to_numpy().astype(int) + cv_main.max()
+    cv_rep = rep_lab['run_overall'].to_numpy().astype(int) + cv_main.max()
     cv_labs = np.concatenate([cv_main, cv_rep], axis=0)
 
     # label vectors (+ remap non-1/2/3 tasks to 4 = repeat)
+    # I had to fix this... got the labels wrong the first time!!
     is_main_grid = (concat_labels['is_main_grid'].to_numpy().astype(int) == 1)
-    quad_labs    = concat_labels['quadrant'].to_numpy().astype(int)
-    task_labs    = concat_labels['task'].to_numpy().astype(int)
+    quad_labs = concat_labels['quadrant'].to_numpy().astype(int)
+    task_labs = concat_labels['task'].to_numpy().astype(int)
     task_labs[~np.isin(task_labs, [1, 2, 3])] = 4
 
     # build ROI matrices by row-concatenating MAIN then REPEAT
@@ -221,15 +224,20 @@ def subject_decoding_df_replica(sub_id):
                 rows.append([sub_id, rname, task_id_to_name[task_id], bname, acc])
 
     print(f"[decode] Finished decoding for subject {sub_id}")
-    return pd.DataFrame(rows, columns=['sub','ROI','Task','Boundary','ACC'])
+    
+    return pd.DataFrame(rows, columns=['sub','ROI','Task','Boundary','ACC']) # return the df
 
-#%% Decode each subject for Fig 2 (no near/far split)
-# This reproduces the within-task binary decoding used in Fig 2A–C (authors' logic).
+#%% Decode data for each subject for Fig 2 (no near/far split of trials!)
+
 acc_rows_fig2 = [subject_decoding_df_replica(s) for s in sub_ids]
 acc_long_fig2 = pd.concat(acc_rows_fig2, ignore_index=True)
 acc_long_fig2.to_csv(os.path.join(stats_output_path, 'binary_withintask_ACC_long_FIG2_replica.csv'), index=False)
 
-#%% Run the 3-way ANOVA (ROI × Task × Boundary) on linear-only data (like authors’ table)
+#%% Run the 3-way ANOVA (ROI × Task × Boundary) - near only trials, classify either as linear1 or linear2
+
+# load saved decoding csv
+acc_long_fig2 = pd.read_csv(os.path.join(stats_output_path, 'binary_withintask_ACC_long_FIG2_replica.csv'))
+
 def run_task_boundary_roi_anova(df_long, out_csv, print_table=False):
 
     df_ = df_long.copy()
@@ -257,47 +265,34 @@ def run_task_boundary_roi_anova(df_long, out_csv, print_table=False):
 
     return aov
 
-# run ANOVA on linear-only slice from the replica decoding (optional)
-_ = run_task_boundary_roi_anova(acc_long_fig2,
-                                out_csv=os.path.join(stats_output_path, 'anova_table_LINEAR_replica.csv'),
-                                print_table=False)
+# run anova + save outputs
+aov = run_task_boundary_roi_anova(acc_long_fig2, out_csv=os.path.join(stats_output_path, 'anova_table_LINEAR_replica.csv'), print_table=False)
+
+# load in this csv of the anova results
+anova_result = pd.read_csv(os.path.join(stats_output_path, 'anova_table_LINEAR_replica.csv'))
+print(anova_result)
 
 #%% Figure 2A–C style plots (copied authors' style)
 
-import numpy as np
-import pandas as pd
-import os
-from pathlib import Path
-import matplotlib.pyplot as plt
-from scipy.stats import sem
-
-# paths
-root_dir = Path(__file__).resolve().parents[1]
-stats_output_path = os.path.join(root_dir, 'bold_decoding_anova_results')
-fig_outdir = os.path.join(stats_output_path, "figs")
-os.makedirs(fig_outdir, exist_ok=True)
-
-# load your saved decoding CSV (already created by your pipeline)
+# load saved decoding csv
 acc_long_fig2 = pd.read_csv(os.path.join(stats_output_path, 'binary_withintask_ACC_long_FIG2_replica.csv'))
 
-# plotting config
-roi_order   = ['V1','V2','V3','V3AB','hV4','LO1','LO2','IPS']
-task_order  = ['linear1','linear2','nonlinear']
+# plotting config (nice lil dictionaries)
+roi_order = ['V1','V2','V3','V3AB','hV4','LO1','LO2','IPS']
+task_order = ['linear1','linear2','nonlinear']
 task_labels = {'linear1':'Linear-1 Task','linear2':'Linear-2 Task','nonlinear':'Nonlinear Task'}
 task_colors = {'linear1':'#1f4e79', 'linear2':'#2e86c1', 'nonlinear':'#76d7c4'}  # dark blue, blue, teal
-chance_y    = 0.5
+chance_y = 0.5
 
 # small horizontal offsets so the three tasks don’t overlap
 offsets = {'linear1': -0.18, 'linear2': 0.0, 'nonlinear': +0.18}
 
 # panel defs to match A–C
-panels = [
-    ('linear1',  'A  Binary classifier: Predict "Linear-1" category'),
-    ('linear2',  'B  Binary classifier: Predict "Linear-2" category'),
-    ('nonlinear','C  Binary classifier: Predict "Nonlinear" category')
-]
+panels = [('linear1',  'A  Binary classifier: Predict "Linear-1" category'), ('linear2',  'B  Binary classifier: Predict "Linear-2" category'), ('nonlinear','C  Binary classifier: Predict "Nonlinear" category')]
 
-def plot_panel(boundary, title, show_legend=False):
+# plot each one of the A, B, C panels
+def plot_panel(boundary, title):
+    
     df_b = acc_long_fig2.query("Boundary == @boundary and Task in @task_order").copy()
 
     fig, ax = plt.subplots(figsize=(10, 4))
@@ -305,9 +300,11 @@ def plot_panel(boundary, title, show_legend=False):
 
     x_base = np.arange(len(roi_order))
 
-    # per-task plotting
+    #  loop over the tasks
     for task in task_order:
+        
         df_t = df_b[df_b['Task'] == task]
+        
         # subject-level gray dots
         for s, df_s in df_t.groupby('sub'):
             y = df_s.set_index('ROI').reindex(roi_order)['ACC'].values
@@ -321,19 +318,17 @@ def plot_panel(boundary, title, show_legend=False):
         x = x_base + offsets[task]
 
         # colored mean dot + error bar
-        ax.errorbar(
-            x, means, yerr=errors, fmt='o', markersize=6, capsize=3,
-            linewidth=1.2, color=task_colors[task], ecolor=task_colors[task], label=task_labels[task], zorder=3
-        )
+        ax.errorbar(x, means, yerr=errors, fmt='o', markersize=6, capsize=3, linewidth=1.2, color=task_colors[task], ecolor=task_colors[task], label=task_labels[task], zorder=3)
 
     ax.set_xticks(x_base)
     ax.set_xticklabels(roi_order)
     ax.set_ylim(0.4, 1.0)
     ax.set_ylabel('Classifier accuracy')
     ax.set_title(title)
-    if show_legend:
-        leg = ax.legend(frameon=False, loc='upper right')
+    
+    ax.legend(frameon=False, loc='upper right')
     fig.tight_layout()
+    
     return fig, ax
 
 # make the three panels; show legend on the last one (like your screenshot)
@@ -341,6 +336,4 @@ for i, (bnd, ttl) in enumerate(panels, 1):
     fig, ax = plot_panel(bnd, ttl, show_legend=(bnd == 'nonlinear'))
     out_png = os.path.join(fig_outdir, f"Figure2_{bnd}_replica_DOTSEM.png")
     fig.savefig(out_png, dpi=300, bbox_inches='tight')
-    print(f"Saved: {out_png}")
     plt.show(fig)
-
