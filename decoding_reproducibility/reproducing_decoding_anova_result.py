@@ -9,32 +9,37 @@ Created on Mon Nov  3 14:43:25 2025
 #%% Set up environment - load in appropiate packages
 
 import numpy as np
-import os # used for configuring paths
+import os  # used for configuring paths
 import sys # used for configuring paths
 import pandas as pd
-from pathlib import Path # for infering path
+from pathlib import Path  # for infering path
 
 # actual stats packages
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.linear_model import LogisticRegressionCV
 from statsmodels.stats.anova import AnovaRM
-from sklearn.feature_selection import f_classif
 
 # for plotting
 from scipy.stats import sem
 # author plotting helpers (matches Fig 2 bar/dot style)
 
-np.random.seed(0) # for reproducibility
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
+
+np.random.seed(0)  # for reproducibility
+
+# convergence controls (keep authors' pipeline, just make solver more forgiving)
+MAX_ITER = 20000
+TOL = 1e-3
 
 #%% Set paths, import helpers from the authors'
 
 # root_dir = '/Users/lenakemmelmeier/Documents/GitHub/henderson2025'
-
-root_dir = Path(__file__).resolve().parents[1] # infer the root based on where this script is placed
+root_dir = Path(__file__).resolve().parents[1]  # infer the root based on where this script is placed
 os.chdir(root_dir)
 
-os.chdir(root_dir)
-package_dir = os.path.join(root_dir, 'decoding_reproducibility') # the parent folder containing code_utils (downloaded from authors)
+package_dir = os.path.join(root_dir, 'decoding_reproducibility')  # the parent folder containing code_utils (downloaded from authors)
 
 # outputs
 stats_output_path = os.path.join(root_dir, 'bold_decoding_anova_results')
@@ -52,7 +57,7 @@ if os.path.isdir(os.path.join(package_dir, 'code_utils')):
 # now these work because the parent of code_utils/ is on sys.path
 from code_utils import data_utils
 data_root = os.path.join(root_dir, 'data')
-data_utils.root = data_root
+data_utils.root = data_root  # match authors’ expectation for data root
 
 # plot utils lives next to data_util
 from code_utils import plot_utils as _plot_utils
@@ -61,346 +66,265 @@ plot_multi_bars = _plot_utils.plot_multi_bars
 
 #%% Init other variables
 
-num_participants = 10 # number of participants
+num_participants = 10  # number of participants
+sub_ids = [str(i).zfill(2) for i in range(1, num_participants + 1)]  # zero-pad sub IDs to 2 digits
 
-# uses list comprehension to make a list of sub IDs to iterate over later
-sub_ids = [str(i).zfill(2) for i in range(1, num_participants + 1)] # zero pads that sub IDs up to 2 digits (e.g., '1' becomes '01')
+# dict for which quadrants correspond to which boundary groupings in the different conditions (authors' convention)
+boundaries = {
+    "linear1": [[1, 4], [2, 3]],
+    "linear2": [[1, 2], [3, 4]],
+    "nonlinear": [[1, 3], [2, 4]],
+}
 
-boundaries = {"linear1": [[1, 4], [2, 3]], "linear2": [[1, 2], [3, 4]], "nonlinear": [[1, 3], [2, 4]]} # dict for which quartiles correspond to which boundary groupings in the different conditions
+task_id_to_name = {1: 'linear1', 2: 'linear2', 3: 'nonlinear', 4: 'repeat'}
 
-#%% Helper functions (run this before the cells below!)
+#%% Helper functions (run this before the sections below!)
 
-# call the authors' helper to load the main trial data
+# call the authors' helper to load the main task trial data (already run-zscored & trial-averaged by authors)
 def load_main_data(sub_id):
-    
     ss = int(sub_id)
-    main_data, main_by_tr, main_labels, roi_names = data_utils.load_main_task_data(ss, make_time_resolved=False, use_bigIPS=True, concat_IPS=True)
-    
+    main_data, main_by_tr, main_labels, roi_names = data_utils.load_main_task_data(
+        ss, make_time_resolved=False, use_bigIPS=True, concat_IPS=True
+    )
     return main_data, main_labels, roi_names
 
-# call the authors' helper to load the repeat trial data
+# call the authors' helper to load the repeat task trial data
 def load_repeat_data(sub_id):
     ss = int(sub_id)
-    
     rep_data, rep_by_tr, rep_labels, roi_names = data_utils.load_repeat_task_data(
         ss, make_time_resolved=False, use_bigIPS=True, concat_IPS=True
     )
-    
     return rep_data, rep_labels, roi_names
 
 # rename IPSall to IPS so plotting code is same as authors'
 def rename_ips(roi_names):
     return ["IPS" if r == "IPSall" else r for r in roi_names]
 
-# makes y for a given boundary (maps quadrant -> 0/1)
-def make_binary_labels(q_arr, boundary_name, boundaries):
-
+# convert quadrant labels to {1,2} class labels for the requested boundary (authors use {1,2}, not {0,1})
+def make_binary_labels(q_arr, boundary_name):
     g0, g1 = boundaries[boundary_name]
     y = np.full(q_arr.shape, -1, dtype=int)
-    y[np.isin(q_arr, g0)] = 0
-    y[np.isin(q_arr, g1)] = 1
-    
+    y[np.isin(q_arr, g0)] = 1
+    y[np.isin(q_arr, g1)] = 2
     return y
 
-# leave-one-run-out decoding within task, per ROI
-def decode_within_task_one_roi(X, y, runs, is_main_mask):
-    # nested CV: inner = LeaveOneGroupOut on the training runs
-    Cs = np.logspace(-3, 3, 10)
-    accs = []
-    logo = LeaveOneGroupOut()
-    for r in np.unique(runs):
-        tr = (runs != r) & is_main_mask      # TRAIN: main-grid only
-        te = (runs == r)                     # TEST: held-out run (we'll score on main-grid only)
+#%% Direct-replication decoding core (matches authors’ logic exactly)
 
+def decode_within_task_one_roi_replica(data_concat, quad_labs, task_labs, cv_labs, is_main_grid,
+                                       task_id, boundary_name):
+    # subset to the current task (1,2,3; task 4 = repeat, not decoded for Fig 2)
+    tinds = (task_labs == task_id)
+    if not np.any(tinds):
+        return np.nan
+
+    # slice arrays to current task
+    X = data_concat[tinds, :]
+    q = quad_labs[tinds]
+    runs = cv_labs[tinds]
+    mg = is_main_grid[tinds]
+
+    # map quadrants -> {1,2} for the boundary
+    y = make_binary_labels(q, boundary_name)
+    if (y <= 0).any():
+        return np.nan
+
+    # per-trial mean-centering across voxels (authors subtract mean voxel response on each trial)
+    X = X - X.mean(axis=1, keepdims=True)
+    X = np.asarray(X, dtype=np.float64)  # help BLAS/LBFGS convergence on some builds
+
+    # storage for per-trial predictions across outer folds
+    nt = X.shape[0]
+    pred = np.full(nt, np.nan)
+
+    # authors’ C grid for LR; multinomial with lbfgs, L2
+    c_values = np.logspace(-9, 1, 20)
+    logo = LeaveOneGroupOut()
+
+    # outer CV: leave-one-run-out by runs within the current task
+    for cv in np.unique(runs):
+        tr = (runs != cv) & mg          # TRAIN on main-grid trials only
+        te = (runs == cv)               # TEST on held-out run (we will score on its main-grid trials)
+
+        # need enough trials + both classes in training
         if tr.sum() < 4 or np.unique(y[tr]).size < 2 or te.sum() == 0:
             continue
 
-        # inner CV groups are per-trial run labels on the training set
-        inner_cv = logo.split(X[tr], y[tr], groups=runs[tr])
+        # inner CV: LOGO on the training runs only (groups = run ids)
+        inner_groups = runs[tr]
+        inner_cv = logo.split(X[tr], y[tr], groups=inner_groups)
 
         clf = LogisticRegressionCV(
-            Cs=Cs,
             cv=inner_cv,
-            penalty='l2',
-            solver='lbfgs',
+            Cs=c_values,
             multi_class='multinomial',
-            max_iter=5000,
-            tol=1e-4,
-            n_jobs=-1
+            solver='lbfgs',
+            penalty='l2',
+            n_jobs=-1,
+            max_iter=MAX_ITER,  # increased iter budget
+            tol=TOL             # slightly looser tolerance
         )
         clf.fit(X[tr], y[tr])
 
-        # score only on main-grid trials of the held-out run (to match paper)
-        te_main = te & is_main_mask
-        accs.append((clf.predict(X[te_main]) == y[te_main]).mean())
-    return float(np.mean(accs)) if accs else np.nan
+        # predict the held-out run
+        pred[te] = clf.predict(X[te])
 
-def subject_decoding_df(sub_id, boundaries, top_k_voxels=None, mode='fig2'):
-    
+    # final accuracy is computed on MAIN-GRID trials only (to match paper)
+    if np.isnan(pred).any():
+        valid = (~np.isnan(pred)) & mg
+        if valid.sum() == 0:
+            return np.nan
+        return (pred[valid] == y[valid]).mean()
+
+    return (pred[mg] == y[mg]).mean()
+
+def subject_decoding_df_replica(sub_id):
     print(f"[decode] Started decoding for subject {sub_id}")
 
     # load main and repeat data
-    main_rois, main_label, main_roi_names = load_main_data(sub_id)
-    rep_rois,  rep_label,  rep_roi_names  = load_repeat_data(sub_id)
+    main_rois, main_lab, main_roi_names = load_main_data(sub_id)
+    rep_rois,  rep_lab,  rep_roi_names  = load_repeat_data(sub_id)
 
-    # just renaming the ips roi
+    # keep ROI name list consistent with authors' plotting
     roi_names = rename_ips(main_roi_names)
+    n_rois = len(roi_names)
 
-    # get label vectors
-    is_main_grid_main = main_label['is_main_grid'].astype(bool).to_numpy()
-    runs_main = main_label['run_overall'].to_numpy().astype(int)
-    tasks_main = main_label['task'].to_numpy().astype(int)
-    quads_main = main_label['quadrant'].to_numpy().astype(int)
+    # concatenate labels (MAIN on top of REPEAT)
+    concat_labels = pd.concat([main_lab, rep_lab], axis=0)
 
-    # get repeat labels (voxel selection)
-    is_main_grid_rep = rep_label['is_main_grid'].astype(bool).to_numpy()
-    quads_rep = rep_label['quadrant'].to_numpy().astype(int)
+    # leave-one-run-out groups: offset REPEAT runs so they don't collide with MAIN
+    cv_main = main_lab['run_overall'].to_numpy().astype(int)
+    cv_rep  = rep_lab['run_overall'].to_numpy().astype(int) + cv_main.max()
+    cv_labs = np.concatenate([cv_main, cv_rep], axis=0)
 
-    voxel_masks = []
-    for X_rep_roi in rep_rois:
-        
-        # X_rep_roi: [nTrials x nVox] (already run-zscored & trial-averaged by authors)
-        Xr = X_rep_roi[is_main_grid_rep, :]
-        # Per-trial mean-centering across voxels
-        Xr = Xr - Xr.mean(axis=1, keepdims=True)
-        
-        qr = quads_rep[is_main_grid_rep]
+    # label vectors (+ remap non-1/2/3 tasks to 4 = repeat)
+    is_main_grid = (concat_labels['is_main_grid'].to_numpy().astype(int) == 1)
+    quad_labs    = concat_labels['quadrant'].to_numpy().astype(int)
+    task_labs    = concat_labels['task'].to_numpy().astype(int)
+    task_labs[~np.isin(task_labs, [1, 2, 3])] = 4
 
-        if top_k_voxels in (None, 'all'):
-            mask = np.ones(Xr.shape[1], dtype=bool)
-        else:
-            nvox = Xr.shape[1]
-            top_k = int(min(nvox, np.min([r.shape[1] for r in rep_rois])))
-            if isinstance(top_k_voxels, (int, np.integer)):
-                top_k = min(top_k, int(top_k_voxels))
-            mask = select_voxels_by_quadrant_anova(Xr, qr, top_k)
-        voxel_masks.append(mask)
-
-    # apply the voxel masks
+    # build ROI matrices by row-concatenating MAIN then REPEAT
     roi_arrays = []
-    roi_names_kept = []
-    
-    for rname, X_main_roi, m in zip(roi_names, main_rois, voxel_masks):
-        
-        if m.sum() == 0:
-            continue
-        
-        roi_arrays.append(X_main_roi[:, m])   # still [nTrials x nKeptVox]
-        roi_names_kept.append(rname)
-        
-    roi_names = roi_names_kept
+    for ri in range(n_rois):
+        Xm = main_rois[ri]  # [nTrials_main x nVox]
+        Xr = rep_rois[ri]   # [nTrials_rep  x nVox]
+        roi_arrays.append(np.concatenate([Xm, Xr], axis=0))
 
-    # make the trial subsets
-    def near_far_masks(labels_df):
-        # reuse your helper to compute near/far; expects the CSV columns present
-        return build_near_far_masks(labels_df)
-
-    if mode == 'anova_near':
-        nf = near_far_masks(main_label)  # dict by task_id
+    # decode per ROI × task (1/2/3) × boundary
     rows = []
-    task_id_to_name = {1:'linear1', 2:'linear2', 3:'nonlinear'}
-
-    tasks_to_run = (1,2) if mode == 'anova_near' else (1,2,3)
-    boundaries_to_try = ('linear1','linear2') if mode != 'fig2' else ('linear1','linear2','nonlinear')
-
-    for task_id in tasks_to_run:
-        if mode == 'fig2':
-            tmask = (tasks_main == task_id) & is_main_grid_main
-        else:
-            tmask = nf[task_id]['near']  # NEAR-only
-
-        if tmask.sum() == 0:
-            continue
-
-        q_t = quads_main[tmask]
-        run_t = runs_main[tmask]
-
-        for bname in boundaries_to_try if mode == 'fig2' else ('linear1','linear2'):
-            y = make_binary_labels(q_t, bname, boundaries)
-            valid = (y >= 0)
-            yv, rv = y[valid], run_t[valid]
-
-            # main-grid mask aligned to the CURRENT subset (tmask + valid)
-            is_main_mask = is_main_grid_main[tmask][valid].astype(bool)
-            
-            for rname, X_roi in zip(roi_names, roi_arrays):
-                Xv = X_roi[tmask, :][valid]
-                # Per-trial mean-centering across voxels
-                Xv = Xv - Xv.mean(axis=1, keepdims=True)
-            
-                # sanity check: all vectors align
-                assert is_main_mask.shape[0] == Xv.shape[0] == yv.shape[0] == rv.shape[0]
-            
-                acc = decode_within_task_one_roi(Xv, yv, rv, is_main_mask=is_main_mask)
-            
+    for rname, X in zip(roi_names, roi_arrays):
+        for task_id in (1, 2, 3):  # three categorization tasks for Fig 2
+            for bname in ('linear1', 'linear2', 'nonlinear'):
+                acc = decode_within_task_one_roi_replica(
+                    X, quad_labs, task_labs, cv_labs, is_main_grid,
+                    task_id, bname
+                )
                 rows.append([sub_id, rname, task_id_to_name[task_id], bname, acc])
-
 
     print(f"[decode] Finished decoding for subject {sub_id}")
     return pd.DataFrame(rows, columns=['sub','ROI','Task','Boundary','ACC'])
 
-# three-way anova w/ ROI x Task x Boundary (only for linear tasks/boundaries)
-def run_task_boundary_roi_anova(df_long, out_csv, print_table = False):
+#%% Decode each subject for Fig 2 (no near/far split)
+# This reproduces the within-task binary decoding used in Fig 2A–C (authors' logic).
+acc_rows_fig2 = [subject_decoding_df_replica(s) for s in sub_ids]
+acc_long_fig2 = pd.concat(acc_rows_fig2, ignore_index=True)
+acc_long_fig2.to_csv(os.path.join(stats_output_path, 'binary_withintask_ACC_long_FIG2_replica.csv'), index=False)
+
+#%% Run the 3-way ANOVA (ROI × Task × Boundary) on linear-only data (like authors’ table)
+def run_task_boundary_roi_anova(df_long, out_csv, print_table=False):
 
     df_ = df_long.copy()
 
     # keep only linear tasks/boundaries
     df_ = df_[df_['Task'].isin(['linear1','linear2']) & df_['Boundary'].isin(['linear1','linear2'])].copy()
-    df_ = df_.dropna(subset=['ACC']) # get rid of NaNs
+    df_ = df_.dropna(subset=['ACC'])  # in case any ROI/task/boundary produced NaN (e.g., too few trials/classes)
 
     # cast to strings for AnovaRM
     for col in ['sub','ROI','Task','Boundary']:
         df_[col] = df_[col].astype(str)
 
-    # fit 3-way RM ANOVA
+    # fit 3-way repeated-measures ANOVA
     aov = AnovaRM(df_, depvar='ACC', subject='sub', within=['ROI','Task','Boundary']).fit()
 
+    # save the ANOVA table
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
     aov.anova_table.to_csv(out_csv)
 
-    print("\n=== Full 3-way ANOVA (ROI × Task × Boundary) ===")
-    print(aov.anova_table)
-    print("\n--- Task × Boundary interaction ---")
-    print(aov.anova_table.loc[aov.anova_table.index.str.contains('Task:Boundary')])
+    if print_table:
+        print("\n=== Full 3-way ANOVA (ROI × Task × Boundary) ===")
+        print(aov.anova_table)
+        print("\n--- Task × Boundary interaction ---")
+        print(aov.anova_table.loc[aov.anova_table.index.str.contains('Task:Boundary')])
 
     return aov
 
-# one-way anova for voxel selection
-def select_voxels_by_quadrant_anova(trial_by_voxel, quadrants, top_k):
+# run ANOVA on linear-only slice from the replica decoding (optional)
+_ = run_task_boundary_roi_anova(acc_long_fig2,
+                                out_csv=os.path.join(stats_output_path, 'anova_table_LINEAR_replica.csv'),
+                                print_table=False)
 
-    if trial_by_voxel.shape[0] <= 1:
-        return np.ones(trial_by_voxel.shape[1], dtype=bool)
-    
-    F, _ = f_classif(trial_by_voxel, quadrants)
-    F[np.isnan(F)] = 0
-    order = np.argsort(F)[::-1]
-    keep = order[:min(top_k, len(order))]
-    mask = np.zeros(trial_by_voxel.shape[1], dtype=bool)
-    mask[keep] = True
-    
-    return mask
-
-# masks for trials -- which are near vs. far for the different boundary conditions
-def build_near_far_masks(labels):
-    
-    L = labels.copy()
-    mg = L['is_main_grid'].astype(bool).to_numpy()
-    t = L['task'].astype(int).to_numpy()
-    x = pd.to_numeric(L['nn_ptx'], errors='coerce').to_numpy()
-    y = pd.to_numeric(L['nn_pty'], errors='coerce').to_numpy()
-    d1 = pd.to_numeric(L['dist_from_bound1'], errors='coerce').to_numpy()
-    d2 = pd.to_numeric(L['dist_from_bound2'], errors='coerce').to_numpy()
-    keys = np.array(list(zip(np.round(x,3), np.round(y,3))), dtype=object)
-
-    masks = {1:{'near':np.zeros(len(L),bool),'far':np.zeros(len(L),bool)},
-             2:{'near':np.zeros(len(L),bool),'far':np.zeros(len(L),bool)},
-             3:{'near':np.zeros(len(L),bool),'far':np.zeros(len(L),bool)}}
-
-    for task_id in (1,2):
-        
-        use = (t==task_id) & mg & np.isfinite(x) & np.isfinite(y)
-        
-        if not use.any(): continue
-        d = d1 if task_id==1 else d2
-        
-        df = pd.DataFrame({'k':keys[use], 'dist':d[use]})
-        pos = df.groupby('k', as_index=False)['dist'].median().sort_values('dist', kind='mergesort')
-        nearK = pos['k'].iloc[:8].tolist()
-        farK  = pos['k'].iloc[-8:].tolist()
-        
-        near_mask = np.array([k in set(nearK) for k in keys], dtype=bool)
-        far_mask  = np.array([k in set(farK)  for k in keys], dtype=bool)
-        
-        masks[task_id]['near'] = use & near_mask
-        masks[task_id]['far']  = use & far_mask
-
-
-    # nonlinear: corners far
-    use = (t==3) & mg & np.isfinite(x) & np.isfinite(y)
-    if use.any():
-        
-        xs = np.unique(np.round(x[use],3)); ys = np.unique(np.round(y[use],3))
-        
-        if xs.size>=2 and ys.size>=2:
-            corners = {(xs.min(),ys.min()),(xs.min(),ys.max()),(xs.max(),ys.min()),(xs.max(),ys.max())}
-            is_corner = np.array([k in corners for k in keys], dtype=bool)
-            masks[3]['far']  = use & is_corner
-            masks[3]['near'] = use & (~is_corner)
-            
-    return masks
-
-#%% Decode each subject for Fig 2 (no near/far split)
-# Run this cell for binary logistic regression classification. 
-# The classifier was trained to predict the category of the shape in the trial according to the Linear1, Linear2, OR, Nonlinear decision rule. 
-# There is no split of 'near' vs. 'far' trials here (pooling data across all). 
-# This will be data used to test our ability to recreate Fig 2A-C.
-
-acc_rows_fig2 = [subject_decoding_df(s, boundaries, top_k_voxels=None, mode='fig2') for s in sub_ids]
-acc_long_fig2 = pd.concat(acc_rows_fig2, ignore_index=True)
-acc_long_fig2.to_csv(os.path.join(stats_output_path, 'binary_within_task_acc_long_FIG2.csv'), index=False)
-
-#%% Decode each subject for ANOVA (near only: labels are linear1 vs. linear2)
-# Run this cell below to perform binary classification. 
-# Here, the features are the voxel activation data for 'near' trials only (when the shape to categorize was one of the eight closest to the decision boundary in the main grid) across the ROIs. 
-# The labels are Linear1 vs. Linear 2.
-
-acc_rows_near = [subject_decoding_df(s, boundaries, top_k_voxels=None, mode='anova_near') for s in sub_ids]
-acc_long_near = pd.concat(acc_rows_near, ignore_index=True)
-acc_long_near.to_csv(os.path.join(stats_output_path, 'binary_within_task_acc_long_NEARONLY.csv'), index=False)
-
-#%% Run the 3-way ANOVA (ROI × Task × Boundary) on the data from above
-# Run this cell below to run a 3-way ANOVA (ROI × Task × Boundary) on the classification accuracy from the binary decoder above (data for near-trials only, labels: Linear1 vs. Linear2). 
-# The authors found that, in examing the data for near trials only , that there was be an interaction between classifier boundary and task, 
-# such that the classifier performed better better when the boundary matched the one that was currently active in the task (a significant effect size of Task x Boundary).
-
-aov = run_task_boundary_roi_anova(acc_long_near, out_csv=os.path.join(stats_output_path, 'anova_table_NEARONLY.csv'))
-
-#%% Figure 2A–C style plots (I copied the authors' style here)
-# Run this cell to recreate Figure 2A–C (I copied the authors' style here by importing their figure code. 
-# Figure this was best-suited to side=by-side comparison). 
-# The idea here is that I should be able to recreate their general pattern of results, such that binary classification accuracy will be highest in V1 and V2 and lowest in LO2 and IPS.
+#%% Figure 2A–C style plots (copied authors' style helpers)
 
 fig_outdir = os.path.join(stats_output_path, "figs")
 os.makedirs(fig_outdir, exist_ok=True)
 set_all_font_sizes(12)
 
-# panels in order
-panels = [('linear1', 'A  Binary classifier: Predict "Linear-1" category'), ('linear2', 'B  Binary classifier: Predict "Linear-2" category'),('nonlinear', 'C  Binary classifier: Predict "Nonlinear" category')]
+# panels in order (Fig. 2A–C)
+panels = [
+    ('linear1',  'A  Binary classifier: Predict "Linear-1" category'),
+    ('linear2',  'B  Binary classifier: Predict "Linear-2" category'),
+    ('nonlinear','C  Binary classifier: Predict "Nonlinear" category')
+]
 
-task_order = ['linear1','linear2','nonlinear']
+task_order  = ['linear1','linear2','nonlinear']
 task_labels = ['Linear-1 Task','Linear-2 Task','Nonlinear Task']
-roi_order = ['V1','V2','V3','V3AB','hV4','LO1','LO2','IPS']
+roi_order   = ['V1','V2','V3','V3AB','hV4','LO1','LO2','IPS']
 
 for bnd, title in panels:
-    
-    df_b = acc_long_fig2[acc_long_fig2['Boundary']==bnd].copy()
+
+    # subset to this boundary
+    df_b = acc_long_fig2[acc_long_fig2['Boundary'] == bnd].copy()
     df_b = df_b[df_b['Task'].isin(task_order)]
-    
-    # get mean/sem arrays [nROI x nTask]
+
+    # mean/sem arrays [nROI x nTask]
     rois_here = [r for r in roi_order if r in df_b['ROI'].unique()]
     means = np.zeros((len(rois_here), len(task_order)))
     errs  = np.zeros((len(rois_here), len(task_order)))
-    
+
     # subject-level points organized as [nSub x nROI x nTask]
     subs = sorted(df_b['sub'].unique().tolist())
     pts  = np.full((len(subs), len(rois_here), len(task_order)), np.nan)
 
     for j, t in enumerate(task_order):
-        
-        grp = df_b[df_b['Task']==t]
+        grp = df_b[df_b['Task'] == t]
         g = grp.groupby('ROI')['ACC']
         m = g.mean().reindex(rois_here)
         e = g.apply(lambda x: sem(x, nan_policy='omit')).reindex(rois_here)
         means[:, j] = m.values
         errs[:,  j] = e.values
-        
-        # fill per-subject points
+
+        # fill per-subject points so we can draw the paired lines
         for si, s in enumerate(subs):
-            gv = grp[grp['sub']==s].set_index('ROI')['ACC'].reindex(rois_here)
+            gv = grp[grp['sub'] == s].set_index('ROI')['ACC'].reindex(rois_here)
             pts[si, :, j] = gv.values
 
-    fh = plot_multi_bars(means, err_data=errs, point_data=pts, add_ss_lines=True, xticklabels=rois_here, ylabel='Classifier accuracy', ylim=[0.4, 1.0], horizontal_line_pos=0.5, title=title, legend_labels=task_labels, legend_overlaid=False, legend_separate=False, err_capsize=3, fig_size=(10,4))
-    
-    out_png = os.path.join(fig_outdir, f"Figure2_{bnd}.png")
+    # authors’ bar/point overlay
+    fh = plot_multi_bars(
+        means,
+        err_data=errs,
+        point_data=pts,
+        add_ss_lines=True,
+        xticklabels=rois_here,
+        ylabel='Classifier accuracy',
+        ylim=[0.4, 1.0],
+        horizontal_line_pos=0.5,
+        title=title,
+        legend_labels=task_labels,
+        legend_overlaid=False,
+        legend_separate=False,
+        err_capsize=3,
+        fig_size=(10,4)
+    )
+
+    out_png = os.path.join(fig_outdir, f"Figure2_{bnd}_replica.png")
     fh.savefig(out_png, dpi=300, bbox_inches='tight')
     print(f"Saved: {out_png}")

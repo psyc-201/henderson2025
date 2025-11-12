@@ -6,8 +6,8 @@ platforms = ["osx-arm64"]
 version = "0.1.0"
 
 [tasks]
-render = 'quarto render "writeup/Replication Report Template.qmd" --to html'
-preview = 'quarto preview "writeup/Replication Report Template.qmd" --to html'
+render = 'quarto render "writeup/henderson2025_replication_report.qmd" --to html'
+preview = 'quarto preview "writeup/henderson2025_replication_report.qmd" --to html'
 
 [dependencies]
 quarto = ">=1.8.25,<2"
