@@ -117,7 +117,9 @@ I finished training the binary decoders, and judging by Figures 2A-C (attached b
 
 I also ran the 3-way ANOVA (ROI × Task × Boundary) on the classification accuracy from the binary decoder above (includes data for near-trials only, labels: Linear1 vs. Linear2). Like the authors, I detected a significant interaction between classifier boundary and task, such that the classifier performed better when the boundary matched th one that was currently activity in the task (p=.0X). This effect was of a _____ effect size, which is similar to the ___ effect size I calculated based off the results reported by the authors. In sum, I would say my reproducability attempt was successful.
 
-I also began the simulation portion of my experience (creating a new batch of stimuli). Specifically, I ____.
+I also began the simulation portion of my experience (creating a new batch of stimuli). Specifically, I created the 36 images that are a part of the 6x6 array I described above (see image below, where I arranged them all in the grid). The authors had about a dozen different scripts in Matlab that they used for stimulus generation. I re-purposed/implemented the legacy functions they used (giivng proper credit), and basically re-consolidated all the functionality to one script. I varied the amplitude of 2 RFCs different from the ones the authors used. I also chose to use a different "shape family." My next step will be running the images through the computer vision models.
+
+
 
 -----
 As a side note, I've doing most of my coding (especially for the classification) within .py files in the Spyder IDE. I do have a .qmd version of the classification pipeline (understand this is more in line with the class objectives, especially because Quarto/Pixi lend themselves to reproducability), but it's been MUCH easier for me to crash-test my code in Spyder's IDE. Moreover, I ran the models on one of the external neurocomputing servers in a .py file because it was easiest for me. Once everything is finalized, I'll update/shift any scripts over to be .qmd.

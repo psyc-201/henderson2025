@@ -105,7 +105,7 @@ def make_binary_labels(q_arr, boundary_name, boundaries):
 # leave-one-run-out decoding within task, per ROI
 def decode_within_task_one_roi(X, y, runs, is_main_mask):
     # nested CV: inner = LeaveOneGroupOut on the training runs
-    Cs = np.logspace(-9, 1, 20)
+    Cs = np.logspace(-3, 3, 10)
     accs = []
     logo = LeaveOneGroupOut()
     for r in np.unique(runs):
@@ -124,7 +124,8 @@ def decode_within_task_one_roi(X, y, runs, is_main_mask):
             penalty='l2',
             solver='lbfgs',
             multi_class='multinomial',
-            max_iter=1000,
+            max_iter=5000,
+            tol=1e-4,
             n_jobs=-1
         )
         clf.fit(X[tr], y[tr])
