@@ -1,43 +1,42 @@
-% Simulation: Making 36 new blobs!
-% Utilizing some code from Henderson 2025 repo
+% Simulation: make 36 blobs
+% some code from Henderson 2025 repo
 % L. Kemmelmeier, 2025
 %
-% Picks a "kind" (base rfc params for blobs)
-% Varies 2 rfcs (x,y) over 6x6 grid with inset coords
-% Generates individual images + grid of them all
-% Saves csv of filenames for images (includes x, y coords)
+% choose a "kind" (base rfc params)
+% vary 2 rfcs (x,y) on a 6x6 grid
+% write individual PNGs + a montage
+% save a csv with filenames and x,y
 
 %% Init variables + set paths
-kind = 'snm'; % 'balls','snm','fetus','cater','peanut','test'
-rfc_x_idx = 2; % rfc along x axis (1..7)
-rfc_y_idx = 5; % rfc along y axis (1..7)
+kind = 'snm';           % 'balls','snm','fetus','cater','peanut','test'
+rfc_x_idx = 2;          % rfc varied along x (1..7)
+rfc_y_idx = 5;          % rfc varied along y (1..7)
 
 out_root = '/Users/lenakemmelmeier/Documents/GitHub/henderson2025/stimuli';
 out_name = 'new_blob_stim';
 
-img_size = 224; % even nums only
-bg_gray = 0.30; % background gray
-fg_gray = 0.90; % shape gray
-save_silhouette = true; % write PNGs? true is on
+img_size = 224;         % even only
+bg_gray = 0.30;         % background gray
+fg_gray = 0.90;         % shape gray
+save_silhouette = true; % write PNGs
 
-grid_ticks = [0.10 1.06 2.02 2.98 3.94 4.90]; % inset ticks on 0..5
-amp_boost = 2.0; % multiply step size for more dramatic rfc changes
-debug_plot_n = 0; % quick visual debug (0 = off)
+grid_ticks = [0.10 1.06 2.02 2.98 3.94 4.90]; % 0..5, inset
+amp_boost = 2.0;        % make rfc changes stronger
+debug_plot_n = 0;       % >0 to preview a few
 
-% output a csv w/ the image coords
 save_dir = fullfile(out_root, out_name);
 if ~exist(save_dir, 'dir')
     mkdir(save_dir);
 end
 manifest_csv = fullfile(save_dir, 'manifest_coords.csv');
 
-% base params (parameter set from Op de Beeck / Drucker, used in Henderson repo)
+% base params (Op de Beeck / Drucker set, used in Henderson repo scripts)
 par = odb_params(kind);
 assert(mod(img_size,2) == 0, 'img_size must be even.');
 
-% evenly map 0–5 coords to rfc amplitude range
+% map 0..5 coords to rfc amplitude steps
 n_dim = numel(grid_ticks);
-new_step = amp_boost .* (5 .* par.step ./ (n_dim - 1)); % (5*step)/(n_dim-1) * amp_boost
+new_step = amp_boost .* (5 .* par.step ./ (n_dim - 1)); % (5*step)/(n_dim-1), scaled
 
 [grid_x, grid_y] = meshgrid(grid_ticks, grid_ticks);
 coords = [grid_x(:), grid_y(:)];
@@ -51,11 +50,11 @@ for ii = 1:n_stim
     x_val = coords(ii,1);
     y_val = coords(ii,2);
 
-    % makes one silhouette w/ chosen rfc pair
-    % non-integer freq handling + endpoint correction from Op de Beeck et al. (2001, 2003)
+    % one silhouette for this (x,y)
+    % non-integer freq closure fix follows Op de Beeck et al. (2001, 2003)
     img_bin = generate_one_blob(par, img_size, new_step, rfc_x_idx, rfc_y_idx, x_val, y_val);
 
-    % paint grayscale
+    % grayscale paint
     img_gray = double(img_bin);
     img_gray(img_gray == 0) = bg_gray;
     img_gray(img_gray == 1) = fg_gray;
@@ -79,7 +78,7 @@ end
 
 fclose(fid);
 
-%% Make grid of all the blobs
+%% Make grid of all blobs
 tile = img_size;
 gap_px = 8;
 border_px = 16;
@@ -115,16 +114,16 @@ imwrite(canvas, fullfile(save_dir, 'grid_montage.png'));
 
 %% Helper function defs
     function img_bin = generate_one_blob(par, img_size, new_step, rfc_x_idx, rfc_y_idx, x_val, y_val)
-    % rfc contour → binary silhouette for one (x,y)
-    % radius modulated by sinusoidal rfc components (Op de Beeck et al., 2001, 2003)
-    % fill step (roipoly/imfill) adapted from Drucker and Op de Beeck MATLAB code
-    % smoothing + normalization consistent with Henderson 2025 implementation
+    % rfc-driven contour to binary mask for one (x,y)
+    % radius is a base circle plus RFC sinusoids (Op de Beeck et al., 2001; 2003)
+    % polygon fill via roipoly/imfill; style consistent with Henderson scripts
 
         w = par.w;
         A = par.A;
         P = par.P;
         step = par.step;
 
+        % size-normalize params (original code tuned around 299 px)
         sz_adj = img_size / 299;
         A = A .* sz_adj;
         step = step .* sz_adj;
@@ -134,14 +133,14 @@ imwrite(canvas, fullfile(save_dir, 'grid_montage.png'));
         r_px = round(70 * sz_adj);
         n_pix = round(2 * pi * r_px);
 
+        % only the two selected rfcs vary
         amp_step = zeros(size(A));
         amp_step(rfc_x_idx) = new_step(rfc_x_idx) * x_val;
         amp_step(rfc_y_idx) = new_step(rfc_y_idx) * y_val;
 
-        % radius as function of angle (sum of RFC sinusoids)
         curve_func = @(theta) r_px + sum((A + amp_step) .* sin(w .* theta' + P), 2);
 
-        % endpoint closure correction for non-integer frequencies (Op de Beeck fix)
+        % close start/end mismatch for non-integer freqs
         y_begin = curve_func(0);
         y_end = curve_func(2 * pi);
         delta_close = y_end - y_begin;
@@ -154,7 +153,7 @@ imwrite(canvas, fullfile(save_dir, 'grid_montage.png'));
             rho = curve_func(theta);
 
             y_valc = rho * cos(theta);
-            x_valc = (-1) * rho * sin(theta);
+            x_valc = (-1) * rho * sin(theta);      % keep legacy orientation
             y_valc = y_valc + cos(theta / 2) * delta_close / 2;
 
             x_coord = round(x_valc + center);
@@ -180,9 +179,8 @@ imwrite(canvas, fullfile(save_dir, 'grid_montage.png'));
             end
         end
 
-        % light smoothing to reduce jagged edges (seen in Henderson code)
+        % mild smoothing to reduce stair-steps
         win_sz = max(1, floor(5.84 * sz_adj));
-
         if win_sz > 1
             win = ones(1, win_sz);
             x_poly = filtfilt(win / win_sz, 1, x_poly);
@@ -195,7 +193,7 @@ imwrite(canvas, fullfile(save_dir, 'grid_montage.png'));
     end
 
     function par = odb_params(kind)
-    % rfc base parameter sets from Op de Beeck and Drucker (used in Henderson repo)
+    % rfc parameter sets from Op de Beeck and Drucker (used in Henderson repo)
         if nargin == 0
             kind = 'balls';
         end
@@ -210,9 +208,9 @@ imwrite(canvas, fullfile(save_dir, 'grid_montage.png'));
         params.fetus.P = [1.88 1.79 6.21 3.24 2.72 4.78 1.31];
         params.fetus.step = [0 5.17 0 0 6.00 0 0];
 
-        params.snm.w = [1.92 1.73 4.82 7.33 2.57 2.11 2.77];
-        params.snm.A = [22.50 2.00 1.68 15.00 2.00 19.20 7.30];
-        params.snm.P = [4.65 3.99 5.94 1.59 4.60 0.45 5.39];
+        params.snm.w  = [1.92 1.73 4.82 7.33 2.57 2.11 2.77];
+        params.snm.A  = [22.50 2.00 1.68 15.00 2.00 19.20 7.30];
+        params.snm.P  = [4.65 3.99 5.94 1.59 4.60 0.45 5.39];
         params.snm.step = [0 6.00 0 0 3.44 0 0];
 
         params.cater.w = [1.29 3.48 0.82 5.34 2.11 1.96 1.83];
@@ -232,3 +230,8 @@ imwrite(canvas, fullfile(save_dir, 'grid_montage.png'));
 
         par = params.(kind);
     end
+
+% refs (brief):
+% Op de Beeck H et al. 2001 Nat Neurosci; 2003 JEP:General: rfc-based shape spaces, non-integer freq handling
+% Drucker DM (MATLAB implementations with roipoly/imfill for filled silhouettes)
+% Henderson: practical parameter scaling to ~299 px and light smoothing
