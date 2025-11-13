@@ -1,0 +1,35 @@
+nohup: ignoring input
+[decode] Started decoding for subject 01
+[decode] Finished decoding for subject 01
+[decode] Started decoding for subject 02
+[decode] Finished decoding for subject 02
+[decode] Started decoding for subject 03
+[decode] Finished decoding for subject 03
+[decode] Started decoding for subject 04
+[decode] Finished decoding for subject 04
+[decode] Started decoding for subject 05
+[decode] Finished decoding for subject 05
+[decode] Started decoding for subject 06
+[decode] Finished decoding for subject 06
+[decode] Started decoding for subject 07
+[decode] Finished decoding for subject 07
+[decode] Started decoding for subject 08
+[decode] Finished decoding for subject 08
+[decode] Started decoding for subject 09
+[decode] Finished decoding for subject 09
+[decode] Started decoding for subject 10
+[decode] Finished decoding for subject 10
+          Unnamed: 0    F Value  Num DF  Den DF        Pr > F
+0                ROI  92.555502     7.0    63.0  1.078116e-30
+1               Task   3.044203     1.0     9.0  1.149868e-01
+2           Boundary  14.080167     1.0     9.0  4.538170e-03
+3           ROI:Task   0.355391     7.0    63.0  9.244177e-01
+4       ROI:Boundary   4.713494     7.0    63.0  2.666991e-04
+5      Task:Boundary   2.100785     1.0     9.0  1.811569e-01
+6  ROI:Task:Boundary   1.001356     7.0    63.0  4.388739e-01
+Traceback (most recent call last):
+  File "/mnt/neurocube/local/serenceslab/lena/henderson2025/decoding_reproducibility/reproducing_decoding_anova_result.py", line 385, in <module>
+    plt.show(fig)
+  File "/home/lkemmelmeier/anaconda3/envs/h25/lib/python3.9/site-packages/matplotlib/pyplot.py", line 378, in show
+    return _backend_mod.show(*args, **kwargs)
+TypeError: show() takes 1 positional argument but 2 were given
