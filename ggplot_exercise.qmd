@@ -1,0 +1,109 @@
+
+
+Recreating my Python figures in ggplot! This is mimicking 2A-C in Henderson et al. (2025) except the fig dim are a little wonky
+
+Loading packages in:
+```{r loading packages}
+# loading libraries
+library(dplyr)
+library(ggplot2)
+library(readr)
+```
+
+Init variables + setting paths
+```{r setting up env}
+root_dir = '/Users/lenakemmelmeier/Documents/GitHub/henderson2025/' # path to the repo dir
+stats_output_path_ggplot <- file.path(root_dir, "bold_decoding_anova_results")
+fig_outdir_ggplot <- file.path(stats_output_path_ggplot, "figs") # the fig output dir will be a child to the dir we already have for stats outputs
+dir.create(fig_outdir_ggplot, recursive = TRUE) # make this output dir for the figs
+
+acc_long_fig2_ggplot <- read_csv(file.path(stats_output_path_ggplot, "binary_withintask_ACC_long_FIG2_replica.csv")) # read the classifer acc in from the csv (from my python script -- I know the naming of it be weird)
+
+# labels for the task and ROIs
+roi_order_ggplot <- c("V1", "V2", "V3", "V3AB", "hV4", "LO1", "LO2", "IPS")
+task_order_ggplot <- c("linear1", "linear2", "nonlinear")
+
+task_labels_ggplot <- c(linear1 = "Linear-1 Task", linear2 = "Linear-2 Task", nonlinear = "Nonlinear Task")
+task_colors_ggplot <- c(linear1 = "#1f4e79", linear2 = "#2e86c1", nonlinear = "#76d7c4")
+chance_y_ggplot <- 0.5 # chance line will be at this acc level (y)
+
+# these are the titles/headers for each fig
+panels_ggplot <- list(
+  list(boundary="linear1", title="A  Binary classifier: Predict \"Linear-1\" category"),
+  list(boundary="linear2", title="B  Binary classifier: Predict \"Linear-2\" category"),
+  list(boundary="nonlinear", title="C  Binary classifier: Predict \"Nonlinear\" category")
+)
+```
+
+Helper function definiton
+```{r helper to plot each fig}
+
+# this plots each panel in the fig (a, b, or c)
+plot_panel <- function(boundary, title_text) {
+
+  # subsets one boundary and order factors
+  df_b <- acc_long_fig2_ggplot %>%
+    filter(Boundary == boundary, Task %in% task_order_ggplot) %>%
+    mutate(ROI = factor(ROI, levels = roi_order_ggplot),
+           Task = factor(Task, levels = task_order_ggplot))
+
+  # gets participant level data for the gray dots
+  subj_dots_ggplot <- df_b %>%
+    group_by(sub, Task, ROI) %>%
+    summarise(ACC = mean(ACC), .groups = "drop")
+
+  # get roi summary stats (this is the mean + se)
+  roi_summary_ggplot <- df_b %>%
+    group_by(Task, ROI) %>%
+    summarise(mean_ACC = mean(ACC),
+              se_ACC = sd(ACC) / sqrt(sum(ACC)),
+              .groups = "drop")
+
+  # set dodge width for grouped points/errbars
+  dodge_ggplot <- position_dodge(width = 0.36)
+
+  # build the plot!!
+  ggplot() +
+
+    geom_hline(yintercept = chance_y_ggplot, colour = "grey50", linewidth = 0.3) + # this is the chance line
+
+    # adding the dots
+    geom_point(data = subj_dots_ggplot, aes(x = ROI, y = ACC, group = Task), position = dodge_ggplot, size = 1.5, colour = "#BFBFBF", alpha = 1, show.legend = FALSE) +
+
+    # adding the error bars
+    geom_errorbar(data = roi_summary_ggplot, aes(x = ROI, y = mean_ACC, ymin = mean_ACC - se_ACC, ymax = mean_ACC + se_ACC, colour = Task), position = dodge_ggplot, width = 0, linewidth = 0.5) +
+
+    # adding the means
+    geom_point(data = roi_summary_ggplot,aes(x = ROI, y = mean_ACC, colour = Task), position = dodge_ggplot, size = 2) +
+
+    # set ylim and xlims
+    scale_y_continuous(limits = c(0.4, 1.0), expand = c(0, 0)) +
+
+    # set task colors/labels
+    scale_colour_manual(values = task_colors_ggplot, breaks = task_order_ggplot, labels = task_labels_ggplot[task_order_ggplot], name = NULL) +
+
+    # add labels
+    labs(x = "ROI", y = "Classifier Accuracy", title = title_text) +
+
+    theme_classic(base_size = 10) + # base theme
+
+    # layout stuff
+    theme(legend.position = c(0.98, 0.98), legend.justification = c("right", "top"), legend.key.size = unit(0.4, "lines"), axis.text.x = element_text(angle = 0, vjust = 0.5), plot.title = element_text(hjust = 0, face = "plain"))
+}
+```
+
+Plotting + saving the figures:
+```{r plot the figs + save!}
+
+# loop over the three figures
+for (i in seq_along(panels_ggplot)) {
+
+  boundary <- panels_ggplot[[i]]$boundary
+  title <- panels_ggplot[[i]]$title
+
+  fig_ggplot <- plot_panel(boundary, title) # call that lovely helper
+  out_png_ggplot <- file.path(fig_outdir_ggplot, paste0("Figure2_", boundary, "_replica_ggplot.png")) # name the fig correctly
+  ggsave(filename=out_png_ggplot, plot=fig_ggplot, dpi=300) # save at high dpi
+  print(fig_ggplot) # okay so the dimensions of the fig are a little wonky here (but ignore that!)
+}
+```

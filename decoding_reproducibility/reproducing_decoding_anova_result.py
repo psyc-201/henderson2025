@@ -35,7 +35,7 @@ stats_output_path = os.path.join(root_dir, 'bold_decoding_anova_results')
 fig_outdir = os.path.join(stats_output_path, "figs")
 os.makedirs(fig_outdir, exist_ok=True)
 
-#%% Set paths, import helpers from the authors'
+#%% Set paths, import helpers from the authors
 
 root_dir = Path(__file__).resolve().parents[1]
 os.chdir(root_dir)
@@ -233,8 +233,11 @@ def subject_decoding_df_replica(sub_id):
 
     rows = []
     for rname, X in zip(roi_names, roi_arrays):
-        for task_id in (1, 2):
-            for bname in ('linear1', 'linear2'):
+        # *** decode for linear1, linear2, AND nonlinear tasks ***
+        for task_id in (1, 2, 3):
+            # *** decode for linear1, linear2, AND nonlinear classifier boundaries ***
+            for bname in ('linear1', 'linear2', 'nonlinear'):
+
                 near_quads = boundaries[bname][0]
                 far_quads = boundaries[bname][1]
 
@@ -274,7 +277,7 @@ acc_long_fig2.to_csv(
     index=False
 )
 
-#%% Run 3-way ANOVA (NEAR ONLY)
+#%% Run 3-way ANOVA (NEAR ONLY, linear tasks & boundaries only)
 
 def run_task_boundary_roi_anova(df_long, out_csv, print_table=False):
 
@@ -343,19 +346,26 @@ def plot_panel(boundary, title):
     for task in task_order:
         df_t = df_b[df_b['Task'] == task]
 
+        # ----- subject-level gray dots -----
         for s, df_s in df_t.groupby('sub'):
-            y = df_s.set_index('ROI').reindex(roi_order)['ACC'].values
+            # collapse over Dist within each ROI for this subject
+            df_s_roi = df_s.groupby('ROI', as_index=True)['ACC'].mean()
+            y = df_s_roi.reindex(roi_order).values
             x = x_base + offsets[task]
             ax.scatter(x, y, s=12, color='#BFBFBF', zorder=1)
 
-        g = df_t.groupby('ROI')['ACC']
+        # ----- ROI means + SEM across subjects -----
+        g = df_t.groupby('ROI')['ACC']   # this already averages over Dist
         means = g.mean().reindex(roi_order).values
         errors = g.apply(lambda x: sem(x, nan_policy='omit')).reindex(roi_order).values
         x = x_base + offsets[task]
 
-        ax.errorbar(x, means, yerr=errors, fmt='o', markersize=6, capsize=3,
-                    linewidth=1.2, color=task_colors[task], ecolor=task_colors[task],
-                    label=task_labels[task], zorder=3)
+        ax.errorbar(
+            x, means, yerr=errors,
+            fmt='o', markersize=6, capsize=3, linewidth=1.2,
+            color=task_colors[task], ecolor=task_colors[task],
+            label=task_labels[task], zorder=3
+        )
 
     ax.set_xticks(x_base)
     ax.set_xticklabels(roi_order)
