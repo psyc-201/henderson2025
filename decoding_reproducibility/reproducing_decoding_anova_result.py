@@ -14,12 +14,10 @@ import sys
 import pandas as pd
 from pathlib import Path
 
-# actual stats packages
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.linear_model import LogisticRegressionCV
 from statsmodels.stats.anova import AnovaRM
 
-# for plotting
 from scipy.stats import sem
 import matplotlib.pyplot as plt
 
@@ -29,7 +27,6 @@ warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 np.random.seed(0)
 
-# paths
 root_dir = Path(__file__).resolve().parents[1]
 stats_output_path = os.path.join(root_dir, 'bold_decoding_anova_results')
 fig_outdir = os.path.join(stats_output_path, "figs")
@@ -98,6 +95,23 @@ def make_binary_labels(q_arr, boundary_name):
     y[np.isin(q_arr, g0)] = 1
     y[np.isin(q_arr, g1)] = 2
     return y
+
+def make_near_far_masks(x, y, boundary_name, is_main_grid):
+    if boundary_name == 'linear1':
+        d = np.abs(x - y)
+        near = (d == 1)
+        far  = (d == 2)
+        return near, far
+    if boundary_name == 'linear2':
+        d = np.abs((x + y) - 5)
+        near = (d == 1)
+        far  = (d == 2)
+        return near, far
+    if boundary_name == 'nonlinear':
+        near = (is_main_grid == 1)
+        far  = (is_main_grid == 1)
+        return near, far
+    return None, None
 
 def decode_within_task_one_roi_replica(data_concat, quad_labs, task_labs, cv_labs, is_main_grid, task_id, boundary_name):
     tinds = (task_labs == task_id)
@@ -225,6 +239,12 @@ def subject_decoding_df_replica(sub_id):
     task_labs = concat_labels['task'].to_numpy().astype(int)
     task_labs[~np.isin(task_labs, [1,2,3])] = 4
 
+    quad_labs_nonlin = quad_labs.copy()
+    quad_labs_nonlin[task_labs == 3] = -1
+
+    x = concat_labels['stim_x'].to_numpy()
+    y = concat_labels['stim_y'].to_numpy()
+
     roi_arrays = []
     for ri in range(n_rois):
         Xm = main_rois[ri]
@@ -233,24 +253,18 @@ def subject_decoding_df_replica(sub_id):
 
     rows = []
     for rname, X in zip(roi_names, roi_arrays):
-        # *** decode for linear1, linear2, AND nonlinear tasks ***
         for task_id in (1, 2, 3):
-            # *** decode for linear1, linear2, AND nonlinear classifier boundaries ***
             for bname in ('linear1', 'linear2', 'nonlinear'):
 
-                near_quads = boundaries[bname][0]
-                far_quads = boundaries[bname][1]
-
-                near_mask = np.isin(quad_labs, near_quads)
-                far_mask = np.isin(quad_labs, far_quads)
+                near_mask, far_mask = make_near_far_masks(x, y, bname, is_main_grid)
 
                 acc_near = decode_with_subset(
-                    X, quad_labs, task_labs, cv_labs, is_main_grid,
+                    X, quad_labs_nonlin, task_labs, cv_labs, is_main_grid,
                     task_id, bname, subset_mask=near_mask
                 )
 
                 acc_far = decode_with_subset(
-                    X, quad_labs, task_labs, cv_labs, is_main_grid,
+                    X, quad_labs_nonlin, task_labs, cv_labs, is_main_grid,
                     task_id, bname, subset_mask=far_mask
                 )
 
@@ -265,13 +279,11 @@ def subject_decoding_df_replica(sub_id):
 acc_rows_fig2 = [subject_decoding_df_replica(s) for s in sub_ids]
 acc_long_fig2 = pd.concat(acc_rows_fig2, ignore_index=True)
 
-# Save NEAR/FAR version
 acc_long_fig2.to_csv(
     os.path.join(stats_output_path, 'binary_withintask_ACC_long_NEARFAR_replica.csv'),
     index=False
 )
 
-# Save copy for Fig2 plots
 acc_long_fig2.to_csv(
     os.path.join(stats_output_path, 'binary_withintask_ACC_long_FIG2_replica.csv'),
     index=False
@@ -300,7 +312,6 @@ def run_task_boundary_roi_anova(df_long, out_csv, print_table=False):
 
     return aov
 
-# load NEAR/FAR data for ANOVA
 acc_long_nearfar = pd.read_csv(os.path.join(
     stats_output_path, 'binary_withintask_ACC_long_NEARFAR_replica.csv'
 ))
@@ -346,16 +357,13 @@ def plot_panel(boundary, title):
     for task in task_order:
         df_t = df_b[df_b['Task'] == task]
 
-        # ----- subject-level gray dots -----
         for s, df_s in df_t.groupby('sub'):
-            # collapse over Dist within each ROI for this subject
             df_s_roi = df_s.groupby('ROI', as_index=True)['ACC'].mean()
             y = df_s_roi.reindex(roi_order).values
             x = x_base + offsets[task]
             ax.scatter(x, y, s=12, color='#BFBFBF', zorder=1)
 
-        # ----- ROI means + SEM across subjects -----
-        g = df_t.groupby('ROI')['ACC']   # this already averages over Dist
+        g = df_t.groupby('ROI')['ACC']
         means = g.mean().reindex(roi_order).values
         errors = g.apply(lambda x: sem(x, nan_policy='omit')).reindex(roi_order).values
         x = x_base + offsets[task]
@@ -382,4 +390,4 @@ for i, (bnd, ttl) in enumerate(panels, 1):
     fig, ax = plot_panel(bnd, ttl)
     out_png = os.path.join(fig_outdir, f"Figure2_{bnd}_replica_DOTSEM.png")
     fig.savefig(out_png, dpi=300, bbox_inches='tight')
-    plt.show(fig)
+    plt.show()
