@@ -13,6 +13,7 @@ import os
 import sys
 import pandas as pd
 from pathlib import Path
+import math
 
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.linear_model import LogisticRegressionCV
@@ -345,6 +346,30 @@ aov = run_task_boundary_roi_anova(
 anova_result = pd.read_csv(os.path.join(
     stats_output_path, 'anova_table_LINEAR_NEARONLY_replica.csv'
 ))
+
+# adding partial-eta (reusing the functions from my post-hoc power analysis)
+def effect_sizes_from_F(F, df1, df2):
+    eta_p2 = (F * df1) / (F * df1 + df2)
+    f = math.sqrt(eta_p2 / (1.0 - eta_p2))  # cast as a float (Cohen's f)
+    return eta_p2, f
+
+# compute effect sizes row-wise and add to table
+eta_vals = []
+f_vals = []
+
+for Fi, d1, d2 in zip(anova_result['F Value'], anova_result['Num DF'], anova_result['Den DF']):
+    eta_p2, f = effect_sizes_from_F(Fi, d1, d2)
+    eta_vals.append(eta_p2)
+    f_vals.append(f)
+
+anova_result['eta_p2'] = eta_vals
+anova_result['cohens_f'] = f_vals
+
+# optionally overwrite the csv with the extended table
+anova_result.to_csv(os.path.join(
+    stats_output_path, 'anova_table_LINEAR_NEARONLY_replica_with_effectsizes.csv'
+), index=False)
+
 print(anova_result)
 
 #%% Figure 2A–C plots
