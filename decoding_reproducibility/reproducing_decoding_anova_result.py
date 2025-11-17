@@ -96,22 +96,22 @@ def make_binary_labels(q_arr, boundary_name):
     y[np.isin(q_arr, g1)] = 2
     return y
 
-def make_near_far_masks(x, y, boundary_name, is_main_grid):
+def make_near_far_masks(dist1, dist2, dist3, boundary_name):
     if boundary_name == 'linear1':
-        d = np.abs(x - y)
-        near = (d == 1)
-        far  = (d == 2)
+        near = np.isclose(dist1, 0.8)
+        far  = np.isclose(dist1, 2.4)
         return near, far
     if boundary_name == 'linear2':
-        d = np.abs((x + y) - 5)
-        near = (d == 1)
-        far  = (d == 2)
+        near = np.isclose(dist2, 0.8)
+        far  = np.isclose(dist2, 2.4)
         return near, far
     if boundary_name == 'nonlinear':
-        near = (is_main_grid == 1)
-        far  = (is_main_grid == 1)
+        near = np.isclose(dist3, 0.8)
+        far  = np.isclose(dist3, 2.4)
         return near, far
-    return None, None
+    near = np.zeros_like(dist1, dtype=bool)
+    far  = np.zeros_like(dist1, dtype=bool)
+    return near, far
 
 def decode_within_task_one_roi_replica(data_concat, quad_labs, task_labs, cv_labs, is_main_grid, task_id, boundary_name):
     tinds = (task_labs == task_id)
@@ -219,6 +219,29 @@ def decode_with_subset(data_concat, quad_labs, task_labs, cv_labs, is_main_grid,
 
     return (pred[valid] == y[valid]).mean()
 
+#%% one-time near/far sanity check (subject 01)
+
+test_sub = sub_ids[0]
+main_rois_chk, main_lab_chk, _ = load_main_data(test_sub)
+rep_rois_chk, rep_lab_chk, _ = load_repeat_data(test_sub)
+labels_chk = pd.concat([main_lab_chk, rep_lab_chk], axis=0)
+
+is_main_grid_chk = (labels_chk['is_main_grid'].to_numpy().astype(int) == 1)
+d1_chk = labels_chk['dist_from_bound1'].to_numpy()
+d2_chk = labels_chk['dist_from_bound2'].to_numpy()
+d3_chk = labels_chk['dist_from_bound3'].to_numpy()
+
+for bname, (dist1, dist2, dist3) in zip(
+    ['linear1','linear2','nonlinear'],
+    [(d1_chk,d2_chk,d3_chk), (d1_chk,d2_chk,d3_chk), (d1_chk,d2_chk,d3_chk)]
+):
+    near_mask_chk, far_mask_chk = make_near_far_masks(dist1, dist2, dist3, bname)
+    near_n = (near_mask_chk & is_main_grid_chk).sum()
+    far_n  = (far_mask_chk  & is_main_grid_chk).sum()
+    print(f"[near/far sanity] sub {test_sub}, {bname}: near={near_n}, far={far_n}")
+
+#%% subject-wise decoding (near/far + full grid)
+
 def subject_decoding_df_replica(sub_id):
     print(f"[decode] Started decoding for subject {sub_id}")
 
@@ -239,11 +262,9 @@ def subject_decoding_df_replica(sub_id):
     task_labs = concat_labels['task'].to_numpy().astype(int)
     task_labs[~np.isin(task_labs, [1,2,3])] = 4
 
-    quad_labs_nonlin = quad_labs.copy()
-    quad_labs_nonlin[task_labs == 3] = -1
-
-    x = concat_labels['stim_x'].to_numpy()
-    y = concat_labels['stim_y'].to_numpy()
+    dist1 = concat_labels['dist_from_bound1'].to_numpy()
+    dist2 = concat_labels['dist_from_bound2'].to_numpy()
+    dist3 = concat_labels['dist_from_bound3'].to_numpy()
 
     roi_arrays = []
     for ri in range(n_rois):
@@ -256,15 +277,15 @@ def subject_decoding_df_replica(sub_id):
         for task_id in (1, 2, 3):
             for bname in ('linear1', 'linear2', 'nonlinear'):
 
-                near_mask, far_mask = make_near_far_masks(x, y, bname, is_main_grid)
+                near_mask, far_mask = make_near_far_masks(dist1, dist2, dist3, bname)
 
                 acc_near = decode_with_subset(
-                    X, quad_labs_nonlin, task_labs, cv_labs, is_main_grid,
+                    X, quad_labs, task_labs, cv_labs, is_main_grid,
                     task_id, bname, subset_mask=near_mask
                 )
 
                 acc_far = decode_with_subset(
-                    X, quad_labs_nonlin, task_labs, cv_labs, is_main_grid,
+                    X, quad_labs, task_labs, cv_labs, is_main_grid,
                     task_id, bname, subset_mask=far_mask
                 )
 
