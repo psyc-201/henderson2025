@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%B %d, %Y')`"
 format:
   html:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
     format:
     self-contained: true
 ---
@@ -128,7 +128,7 @@ As an update from the last progress check: I tried to re-implement the authors�
 
 I also ran the 3-way ANOVA (ROI × Task × Boundary) on the classification accuracy from the binary decoder above (includes data for near-trials only, labels: Linear1 vs. Linear2). My results all seem very off from the authors' but I realized that is probably a mistake on my end with wrangling my data, so I plan to troubleshoot this! After I get the ANOVA result, my reproducibility portion will be officially done.
 
-I also made progress on the simulation portion of my experience (creating a new batch of stimuli). Specifically, **I created the 36 images that are a part of the 6x6 array I described above (see Figure 4 below, where I arranged them all in the grid).** The authors had about a dozen different scripts in Matlab that they used for stimulus generation. I re-purposed/implemented the legacy functions they used (giving proper credit), and basically re-consolidated all the functionality to one script. I varied the amplitude of 2 RFCs different from the ones the authors used. I also chose to use a different "shape family." My next step will be running the images through the computer vision models, then calculating category separability and running PCA.
+I also made progress on the simulation portion of my experience (creating a new batch of stimuli). Specifically, I created the 36 images that are a part of the 6x6 array I described above (see Figure 4 below, where I arranged them all in the grid). The authors had about a dozen different scripts in Matlab that they used for stimulus generation. I re-purposed/implemented the legacy functions they used (giving proper credit), and basically re-consolidated all the functionality to one script. I varied the amplitude of 2 RFCs different from the ones the authors used. I also chose to use a different "shape family." My next step will be running the images through the computer vision models, then calculating category separability and running PCA.
 
 ![6×6 RFC blob grid.](../stimuli/new_blob_stim/grid_montage.png){#fig-blobgrid fig-cap="Blob grid (6×6) spanning 0–5 RFC amplitudes on each axis." fig-alt="36 grayscale blob silhouettes arranged in a 6×6 grid." width="50%" fig-align="center"}
 
@@ -136,6 +136,11 @@ I also made progress on the simulation portion of my experience (creating a new 
 
 -----
 As a side note, I've doing most of my Python coding (especially for the classification) within .py files in the Spyder IDE. I do have a .qmd version of the classification pipeline (understand this is more in line with the class objectives, especially because Quarto/Pixi lend themselves to reproducibility), but it's been MUCH easier for me to crash-test my code in Spyder's IDE. Moreover, I ran the models on one of the external neurocomputing servers in a .py file because it was easiest for me. Once everything is finalized, I'll update/shift any scripts over to be .qmd.
+
+## "Ready to Run" Progress Check
+I de-bugged my code for reproducing the ANOVA Task x Boundary interaction -- it turns out there was an issue with how I masked near vs. far trials (only near trials were included in this analysis). I would say I successfully reproduced their result, as the effect size of this interaction was close to the one in the original study, ηₚ² = .50, and because this effect was significant (see Figure 5). 
+
+![Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary.](../bold_decoding_anova_results/figs/Table1_LINEAR_NEARONLY_replica_APA.png){#fig-blobgrid fig-cap="" fig-alt="Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary." width="100%" fig-align="center"}
 
 ## Results
 
