@@ -365,12 +365,108 @@ for Fi, d1, d2 in zip(anova_result['F Value'], anova_result['Num DF'], anova_res
 anova_result['eta_p2'] = eta_vals
 anova_result['cohens_f'] = f_vals
 
-# optionally overwrite the csv with the extended table
+# csv w/ effect sizes
 anova_result.to_csv(os.path.join(
     stats_output_path, 'anova_table_LINEAR_NEARONLY_replica_with_effectsizes.csv'
 ), index=False)
 
 print(anova_result)
+
+#%% apa-style anova table (image; no cohens f)
+
+def save_apa_anova_table(anova_result, out_png):
+
+    df = anova_result.copy()
+
+    # get effect names
+    if 'Unnamed: 0' in df.columns:
+        df = df.rename(columns={'Unnamed: 0': 'Effect'})
+    else:
+        df = df.reset_index().rename(columns={'index': 'Effect'})
+
+    # format
+    def fmt_p(p):
+        if pd.isna(p):
+            return ''
+        if p < 0.001:
+            return '< .001'
+        return f"{p:.3f}".lstrip('0')
+
+    df['Num DF'] = df['Num DF'].astype(int)
+    df['Den DF'] = df['Den DF'].astype(int)
+    df['F Value'] = df['F Value'].map(lambda x: f"{x:.2f}")
+    df['Pr > F'] = df['Pr > F'].map(fmt_p)
+    df['eta_p2'] = df['eta_p2'].map(lambda x: f"{x:.02f}")
+
+    df = df.rename(columns={
+        'Num DF': 'df1',
+        'Den DF': 'df2',
+        'F Value': 'F',
+        'Pr > F': 'p',
+        'eta_p2': 'np²'   # change label here if you want ηp² instead
+    })
+    df = df[['Effect','df1','df2','F','p','np²']]
+
+    # figure
+    n_rows = len(df)
+    fig, ax = plt.subplots(figsize=(6, 0.6 + 0.3 * n_rows))
+    ax.axis('off')
+
+    # table with no gridlines (we'll draw our own rules)
+    table = ax.table(
+        cellText=df.values,
+        colLabels=df.columns,
+        loc='center',
+        cellLoc='right'  # start with right align, fix Effect below
+    )
+
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    for col in range(len(df.columns)):
+        table.auto_set_column_width(col)
+
+    # remove all cell borders, set alignments + header style
+    n_cols = len(df.columns)
+    for (r, c), cell in table.get_celld().items():
+        cell.visible_edges = ''          # no borders from table
+        cell.set_height(0.12)
+        if r == 0:
+            cell.set_text_props(weight='bold')
+            cell.set_facecolor('#F2F2F2')
+        else:
+            cell.set_facecolor('white')
+
+        # effect column left-aligned
+        if c == 0:
+            cell._loc = 'left'
+            cell._text.set_ha('left')
+        else:
+            cell._loc = 'right'
+            cell._text.set_ha('right')
+
+    # coordinates for rules
+    left = table[(0, 0)].get_x()
+    right = table[(0, n_cols - 1)].get_x() + table[(0, n_cols - 1)].get_width()
+
+    top_header = table[(0, 0)].get_y() + table[(0, 0)].get_height()
+    bottom_header = table[(0, 0)].get_y()
+    bottom_table = table[(n_rows, 0)].get_y()
+
+    # draw apa-style horizontal lines
+    ax.hlines(top_header,   left, right, linewidth=1.5, color='black')  # top
+    ax.hlines(bottom_header,left, right, linewidth=1.0, color='black')  # under header
+    ax.hlines(bottom_table, left, right, linewidth=1.5, color='black')  # bottom
+
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=600, bbox_inches='tight')
+    plt.close(fig)
+
+
+save_apa_anova_table(
+    anova_result,
+    out_png=os.path.join(fig_outdir, 'Table1_LINEAR_NEARONLY_replica_APA.png')
+)
+
 
 #%% Figure 2A–C plots
 
