@@ -5,7 +5,7 @@ date: "`r format(Sys.time(), '%B %d, %Y')`"
 format:
   html:
     toc: true
-    toc_depth: 4
+    toc_depth: 10
     format:
     self-contained: true
 ---

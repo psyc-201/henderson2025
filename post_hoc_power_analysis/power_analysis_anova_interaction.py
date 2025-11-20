@@ -6,13 +6,6 @@ Created on Wed Nov  5 12:31:59 2025
 @author: lenakemmelmeier
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Nov  5 12:31:59 2025
-
-@author: lenakemmelmeier
-"""
 
 #%% set up environment - load in appropiate packages
 
@@ -47,7 +40,7 @@ def power_from_f_N(f, df1, N, alpha=0.05, df2_from_N=lambda N: N - 1):
     
     return power
 
-#  finding smallest N reaching a given target power (no rounding!)
+# finding smallest N reaching a given target power (no rounding!)
 def N_for_target_power(f, df1, target_power, alpha=0.05, start_N=4, max_N=2000, df2_from_N=lambda N: N - 1):
     N = max(start_N, 2)
    
