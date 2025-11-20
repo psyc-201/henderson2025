@@ -9,7 +9,8 @@ Created on Mon Nov 17 22:04:40 2025
 #%% Set up environment - load in appropriate packages
 
 import numpy as np
-import sys, os
+import sys
+import os
 import gc
 import torch
 import time
@@ -18,7 +19,8 @@ import torchvision.models as models
 from sklearn import decomposition
 import pandas as pd
 import PIL.Image
-import scipy.stats, scipy.spatial.distance
+import scipy.stats
+import scipy.spatial.distance
 import matplotlib.pyplot as plt
 from pathlib import Path
 

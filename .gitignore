@@ -10,7 +10,7 @@ data/
 *.zip
 *.csv
 *.tsv
-
+*.tar
 # === Keep code and docs ===
 !**/*.py
 !**/*.md
