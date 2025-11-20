@@ -125,6 +125,7 @@ As an update from the last progress check: I tried to re-implement the authors�
 
 ![Binary classifier: Predict "Nonlinear" category.](../bold_decoding_anova_results/figs/Figure2_nonlinear_replica_DOTSEM.png){#fig-2C fig-cap="Binary classifier predicting Nonlinear category." fig-alt="Scatter plot of classifier accuracy across ROIs for Nonlinear boundary." width="100%" fig-align="center"}
 :::
+:::
 
 I also ran the 3-way ANOVA (ROI × Task × Boundary) on the classification accuracy from the binary decoder above (includes data for near-trials only, labels: Linear1 vs. Linear2). My results all seem very off from the authors' but I realized that is probably a mistake on my end with wrangling my data, so I plan to troubleshoot this! After I get the ANOVA result, my reproducibility portion will be officially done.
 
@@ -134,13 +135,26 @@ I also made progress on the simulation portion of my experience (creating a new 
 
 **Link to Preregistration** [OSF Link](https://doi.org/10.17605/OSF.IO/M7FYH)
 
------
 As a side note, I've doing most of my Python coding (especially for the classification) within .py files in the Spyder IDE. I do have a .qmd version of the classification pipeline (understand this is more in line with the class objectives, especially because Quarto/Pixi lend themselves to reproducibility), but it's been MUCH easier for me to crash-test my code in Spyder's IDE. Moreover, I ran the models on one of the external neurocomputing servers in a .py file because it was easiest for me. Once everything is finalized, I'll update/shift any scripts over to be .qmd.
 
 ## "Ready to Run" Progress Check
-I de-bugged my code for reproducing the ANOVA Task x Boundary interaction -- it turns out there was an issue with how I masked near vs. far trials (only near trials were included in this analysis). I would say I successfully reproduced their result, as the effect size of this interaction was close to the one in the original study, ηₚ² = .50, and because this effect was significant (see Figure 5). 
+I de-bugged my code for reproducing the ANOVA Task x Boundary interaction -- it turns out there was an issue with how I masked near vs. far trials (only near trials were included in this analysis, and the issue was in how I defined these). **I successfully reproduced their result, as the effect size of this interaction, ηₚ² = .48, was close to the one in the original study, ηₚ² = .50, and also significant (see Figure 5).**
 
 ![Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary.](../bold_decoding_anova_results/figs/Table1_LINEAR_NEARONLY_replica_APA.png){#fig-blobgrid fig-cap="" fig-alt="Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary." width="100%" fig-align="center"}
+
+**I finished the simulation arm** by wrapping everything into a single Python script that feeds my 6×6 RFC blob grid into the authors’ pre-trained GIST and SimCLR/ResNet-50 pipelines, gets category separability for each boundary using their original (b − w)/(b + w) metric (see Figure 6), and then visualizes both the separability patterns and the recovered 2D feature space with simple PCA plots (see Figure 7). The Linear2 category separability was slightly higher than that of Linear1 (though not dramatically different), and crucially, the category separability for both linear boundaries was higher than that of the nonlinear boundar (which is to be expected). These PCA plots of the GIST features were a nice successful sanity check -- this stimuli that we manipulated along two axes map cleanly onto a 2D space.
+
+![Image similarity analysis based off calculated activations from two computer vision models, GIST and SimCLR, for each of the 36 main grid images. Quantification of the separability of shape categories within each feature space, based on the ratio of between-category to within-category Euclidean distance values.](../image_similarity/image_category_sep.png){#fig-blobgrid fig-cap="Error bars represent 95% confidence intervals." fig-alt="Image similarity analysis based off calculated activations from two computer vision models, GIST and SimCLR, for each of the 36 main grid images. Quantification of the separability of shape categories within each feature space, based on the ratio of between-category to within-category Euclidean distance values. Error bars represent 95% confidence intervals." width="100%" fig-align="center"}
+
+![Visualization of a principal components analysis (PCA) performed on the GIST model features.](../image_similarity/image_gist_pca.png){#fig-blobgrid fig-cap="Each plotted point represents one shape in PC space, colored according to the coordinate value along axis 1 (left) or axis 2 (right)." fig-alt="Visualization of a principal components analysis (PCA) performed on the GIST model features, where each plotted point represents one shape in PC space, colored according to the coordinate value along axis 1 (left) or axis 2 (right)." width="100%" fig-align="center"}
+
+**What's left?** I plan to fix up my repo by cleaning up the file structure, updating the ReadMe, and checking compatibility with Pixi (which may/will likely include shifting files to either be qmd/Jupyter notebooks). I will also keep working on phasing out the helpers I used in the reproduction aim (the authors' code for loading in the mat files w/ the voxel activation data). I may run an exploratory analysis pending my progress on these items.
+
+**3. Identify one insight your simulation gave you about the strengths or limitations of the original experimental design.**
+
+
+**4. How would this simulation help you design a follow-up experiment with a similar paradigm?**
+
 
 ## Results
 
