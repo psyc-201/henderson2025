@@ -491,7 +491,7 @@ panels = [
 def plot_panel(boundary, title):
     df_b = acc_long_fig2.query("Boundary == @boundary and Task in @task_order").copy()
 
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(8, 4))
     ax.axhline(chance_y, color='gray', linewidth=1.0)
 
     x_base = np.arange(len(roi_order))
@@ -512,16 +512,19 @@ def plot_panel(boundary, title):
 
         ax.errorbar(
             x, means, yerr=errors,
-            fmt='o', markersize=6, capsize=3, linewidth=1.2,
+            fmt='o', markersize=8, capsize=3, linewidth=1.2,
             color=task_colors[task], ecolor=task_colors[task],
             label=task_labels[task], zorder=3
         )
 
     ax.set_xticks(x_base)
-    ax.set_xticklabels(roi_order)
+    ax.set_xticklabels(roi_order, fontsize=18)
     ax.set_ylim(0.4, 1.0)
-    ax.set_ylabel('Classifier accuracy')
-    ax.set_title(title)
+    ax.tick_params(axis='y', labelsize=18)
+    ax.set_ylabel('Classifier accuracy', fontsize=16)
+    ax.set_title(title, fontsize=18)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
     ax.legend(frameon=False, loc='upper right')
     fig.tight_layout()
