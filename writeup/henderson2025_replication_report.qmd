@@ -56,7 +56,7 @@ In the original study, ten participants (7 female) underwent three fMRI sessions
 ### Materials
 
 **Shape Stimuli**
-I closely followed the original protocol when it came to constructing my shape stimuli. In order to create a different stimulus set, I varied a different pair of radial frequency components (RFCs, contours) than those used in the original study. Each RFC defined a sinusoidal modulation of a base circle’s radius as a function of angle, and varying its amplitude changed the prominence of that modulation in the contour. As in the original design, the amplitudes of two RFCs was systematically varied while the remaining RFCs were held constant. These two amplitude values defined the x and y coordinates of a continuous two-dimensional shape space, where each coordinate pair represented to a unique shape.
+I closely followed the original protocol when it came to constructing my shape stimuli. However, in order to create a different stimulus set, I varied a different pair of radial frequency components (RFCs, contours) than those used in the original study. Each RFC defined a sinusoidal modulation of a base circle’s radius as a function of angle, and varying its amplitude changed the prominence of that modulation in the contour. As in the original design, the amplitudes of two RFCs was systematically varied while the remaining RFCs were held constant. These two amplitude values defined the x and y coordinates of a continuous two-dimensional shape space, where each coordinate pair represented to a unique shape.
 
 The manipulation of RFC amplitude defined an x/y grid that spans positions between 0 and 5 arbitrary units, representing relative changes in modulation strength. In contrast to the original 4x4 grid of 16 stimuli with coordinates [0.1, 1.7, 3.3, 4.9], I instead generated a 6x6 grid of 36 stimuli covering the same range. Grid positions were evenly spaced and slightly inset from the edges ([0.1, 1.06, 2.02, 2.98, 3.94, 4.9]). This denser grid sampled from the shape space led to smoother transitions between neighboring shapes. The overall coordinate system (0–5 range with a midpoint at 2.5) was the same.
 
@@ -68,6 +68,7 @@ We divided the shape space into four quadrants by imposing boundaries at the cen
 
 
 ### Procedure	
+This reproducibility and simulation project did not involve aquisition of additioanal behavioral data, or of any of the task-based fMRI data.
 
 ***Main Task Procedure of Henderson et al.***  "The main experimental task consisted of categorizing shape silhouette stimuli (Fig. 1) into binary categories. There were three task conditions: Linear-1, Linear-2, and Nonlinear, each of which corresponded to a different binary categorization rule. Shape stimuli were drawn from a two-dimensional shape space coordinate system (see Shape stimuli). The Linear-1 and Linear-2 tasks used a boundary that was linear in this shape space, while the Nonlinear task used a boundary that was Nonlinear in this shape space (requiring participants to group non-adjacent quadrants into a single category, see Fig. 1 for illustration). Each trial consisted of the presentation of one shape for 1 s, and trials were separated by an inter-trial interval (ITI) that was variable in length, uniformly sampled from the interval 1–5 s. Participants responded on each trial with a button press (right index or middle finger) to indicate which binary category the currently viewed shape fell into; the mapping between category and response was counter-balanced within each scanning session. Participants were allowed to make a response anytime within the window of 2 s from stimulus onset. Feedback was given at the end of each run, and included the participant’s overall accuracy, as well as their accuracy broken down into “easy” and “hard” trials (see next paragraph for description of hard trials), and the number of trials on which they failed to respond. No feedback was given after individual trials.
 
@@ -80,21 +81,32 @@ Before the scan sessions began, participants were trained to perform the shape c
 
 ### Analysis Plan
 
-**Binary Classifier Analysis**
-**I plan to assess whether I can reproduce the reported Task × Boundary interaction effect on decoding accuracy from the ANOVA that included ROI, Task, and Boundary on voxel activation data.** My dependent variable was classifier accuracy computed for each participant across ROI, Task, Boundary, and trial (near vs. far). I will implement the decoding pipeline from scratch in Python, using the preprocessed voxel time course data available on OSF rather than the raw fMRI files, get these classifier accuracies.
+**Binary Decoding of Voxel Activation Data (Reproducibility)**
+**I plan to assess whether I can reproduce the reported Task × Boundary interaction effect on decoding accuracy from the ANOVA that included ROI, Task, and Boundary on voxel activation data for near (hard) trials.** My dependent variable for the ANOVA was classifier accuracy computed for each participant across ROI, Task, Boundary on a trial-by-trial basis. To obtain these classifier accuracies, I implemented the decoding pipeline from scratch in Python using sci-kit learn, using the preprocessed voxel time course data available on OSF rather than the raw fMRI files.
 
-Specifically (in like with Henderson et. al), I will train a binary logistic regression classifier to predict category membership (Category A vs. Category B) from voxel activation patterns within each ROI. Classification will be run separately for each task and boundary type using a leave-one-run-out cross-validation setup. I will then run a repeated-measures ANOVA on mean decoding accuracy with factors ROI, Task, Boundary, and Distance, focusing on the Task × Boundary interaction for near trials.
+In line with the original study, I trained a series of binary logistic regression classifier to predict category membership from voxel activation patterns within each ROI (one classifier predicted Linear-1 boundaries, one Linear-2, and lastly, one Nonlinear boundaries). I followed a leave-one-run-out cross-validation setup. **need to include what paramaters I used!!! no need to state they are different from the original here**
+
+I will then run a repeated-measures ANOVA on mean decoding accuracy with factors ROI, Task, Boundary, and Distance, focusing on the Task × Boundary interaction for near trials.
+
+****key reproducibility criteria**** add this!
+
 
 As a visual check, I plotted the overall decoding accuracy patterns shown in Figure 2A–C to confirm that the pattern of results matches the original paper (I understand the exact means may shift). Specifically, I expect to see higher accuracy for the Linear tasks than the Nonlinear task, with a similar pattern of accuracies (and significance) across ROIs. I will consider the replication successful if I can reproduce both this overall pattern of classifier accuracy and the significant Task × Boundary interaction (Linear-2 > Linear-1 for near trials).
 
-**Image Similarity & Feature Space Analyses**
+****key reproducibility criteria**** add this!
+
+
+**Image Similarity & Feature Space Analyses (Simulation)**
 For my simulation portion of this project, I plan to replicate this section exactly (see quoted section below), using the SimCLR and GIST scripts from the authors’ GitHub repository. I will also extract features from each of my newly generated stimuli and run a simple PCA to check that the feature space captures a clear two-dimensional structure, visualized separately for each shape dimension to make sure the model representations change smoothly along both axes of the shape space (like Figure 1C in the paper). Moreover, I anticipate seeing similar results as Figure 1D, where category separability is highest for the linear boundaries and lowest for the nonlinear boundary across both models, with overall separability values being slightly higher for GIST compared to SimCLR. Again, category separability will be measured as how different images from separate categories were compared to images from within the same category. More specifically, as *(b − w)/(b + w)*, where *b* is the average Euclidean distance between categories and *w* is the average distance within categories, computed from pairwise feature vectors from the GIST and SimCLR models.
+
+This simulation analysis is meant to complement the fMRI decoding results by testing whether similar patterns show up just from the visual features of the stimuli themselves. If GIST and SimCLR both show higher separability for the linear boundaries than for the nonlinear boundary, that would suggest that part of the effect seen in visual cortex could be explained by the image properties alone. But if that same pattern doesn’t appear in the feature-space models, it would suggest that task demands, not just low-level visual differences, shape how these stimuli are represented in the brain.
+
+****key reproducibility criteria**** add this!
 
 "To estimate the perceptual discriminability of our shape categories, we used two computer vision models to extract activations in response to each stimulus image. We first used the GIST model31, which is based on Gabor filters and captures low-level spectral image properties. We also extracted features from a pre-trained SimCLR model32, which is a self-supervised model trained using contrastive learning on a large image database. We selected these two models because the GIST model captures clearly defined image properties similar to those represented in the early visual system, while the SimCLR model can capture a wider set of image features, including mid-level and high-level properties. The GIST model was implemented in Matlab, using a 4 × 4 spatial grid, 4 spatial scales, and 4 orientations per spatial scale. The version of SimCLR that we used was implemented in PyTorch and used a ResNet-50 backbone (pre-trained model downloaded from https://pypi.org/project/simclr/). We extracted activations from blocks 2, 6, 12, and 15, and performed a max-pooling operation (kernel size = 4, stride = 4) to reduce the size of activations from each block. We used principal components analysis (PCA) to further reduce the size of activations, retaining a maximum of 500 components per block, and concatenated the resulting features across all blocks.
 
 Using these activations, we computed the separability of shape categories across each of our boundaries (Linear-1, Linear-2, Nonlinear) by computing all pairwise Euclidean distances between main grid shapes in the same category (within-category distances) and main grid shapes in different categories (between-category distances). We then computed the average of the within-category distances (w) and between-category distances (b). The separability measure for each boundary was computed as: (b−w)/(b+w)."
 
-This simulation analysis is meant to complement the fMRI decoding results by testing whether similar patterns show up just from the visual features of the stimuli themselves. If GIST and SimCLR both show higher separability for the linear boundaries than for the nonlinear boundary, that would suggest that part of the effect seen in visual cortex could be explained by the image properties alone. But if that same pattern doesn’t appear in the feature-space models, it would suggest that task demands, not just low-level visual differences, shape how these stimuli are represented in the brain.
 
 ### Differences from Original Study
 I used the preprocessed voxel activation data they shared instead of reanalyzing the raw fMRI data, and only reproduced the decoding and ANOVA portions rather than the full fMRI acquisition and behavioral data analysis. I also re-implemented the binary decoding and ANOVA pipeline from scratch.  
@@ -152,14 +164,10 @@ I de-bugged my code for reproducing the ANOVA Task x Boundary interaction -- it 
 
 ## Results
 
-Note from Bria for the results: Plan to include a side-by-side panel showing your replicated accuracy pattern next to the original Task × Boundary figure, with effect sizes and confidence intervals.
-
-For image similarity (another note from Bria): For visualization, I would plan a simple PCA/tSNE plot of model features, annotated by boundary type.
-
 
 ### Data preparation
 
-Data preparation following the analysis plan.
+Data preparation following the analysis plan. [Just make a note that these occured in another script...]
 
 ### Confirmatory analysis
 
