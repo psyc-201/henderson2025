@@ -13,7 +13,7 @@ format:
 ## Links  
 - [GitHub Repo](https://github.com/Lena-Kemmelmeier/henderson2025)  
 - [Henderson et al. (2025) Paper (PDF)](https://github.com/Lena-Kemmelmeier/henderson2025/blob/main/original_paper/henderson_2025.pdf){target=_blank}  
-- [Link to Pre-registration](https://doi.org/10.17605/OSF.IO/M7FYH)  
+- [Link to Pre-registration (DOI)](https://doi.org/10.17605/OSF.IO/F75RS)  
 
 ## Introduction
 
@@ -81,17 +81,21 @@ Before the scan sessions began, participants were trained to perform the shape c
 
 ### Analysis Plan
 
+Can also quote directly, though it is less often spelled out effectively for an analysis strategy section. The key is to report an analysis strategy that is as close to the original - data cleaning rules, data exclusion rules, covariates, etc. - as possible.  Can bold key analysis/effect of interest. 
+
 **Binary Decoding of Voxel Activation Data (Reproducibility)**
-**I plan to assess whether I can reproduce the reported Task × Boundary interaction effect on decoding accuracy from the ANOVA that included ROI, Task, and Boundary on voxel activation data for near (hard) trials.** My dependent variable for the ANOVA was classifier accuracy computed for each participant across ROI, Task, Boundary on a trial-by-trial basis. To obtain these classifier accuracies, I implemented the decoding pipeline from scratch in Python using sci-kit learn, using the preprocessed voxel time course data available on OSF rather than the raw fMRI files.
+**I tested whether I could reproduce the reported Task × Boundary interaction effect on binary decoding accuracy from the ANOVA that included ROI, Task, and Boundary on voxel activation data for near (hard) trials, and whether I could reproduce the overall accuracies of the three decoders corresponding to each task boundary condition across ROIs.** 
 
-In line with the original study, I trained a series of binary logistic regression classifier to predict category membership from voxel activation patterns within each ROI (one classifier predicted Linear-1 boundaries, one Linear-2, and lastly, one Nonlinear boundaries). I followed a leave-one-run-out cross-validation setup. **need to include what paramaters I used!!! no need to state they are different from the original here**
+My decoding approach largely mirrored that of the original study: for each participant, ROI, and task, I trained separate L2-regularized logistic-regression classifiers (with the lbfgs solver) using the voxel activation pattern from each individual trial as the input feature vector. In other words, every trial contributed a voxel pattern for each ROI, and the classifier learned to map these patterns to one of the two categories (either defined by the Linear-1, Linear-2, or Nonlinear boundaries). I used the same 20 log-spaced C values (ranging for -9 to 1) for regularization and selected the optimal C using nested cross-validation within the training data, with leave-one-run-out cross-validation at the outer level. To make sure there was stable convergence across ROIs, I increased the maximum iteration limit to 20,000 and also relaxed the convergence tolerance (tol = 1e-3). I implemented all steps for this supervised classification pipeline in Python using the sci-kit learn library (version 1.0.2, this matched the version used by the original authors).
 
-I will then run a repeated-measures ANOVA on mean decoding accuracy with factors ROI, Task, Boundary, and Distance, focusing on the Task × Boundary interaction for near trials.
+Because my goal was to reproduce the Task × Boundary interaction, I used these classifier accuracies directly as the dependent variable in the three-way repeated-measures ANOVA (included ROI, Task, and Boundary). Following Henderson et al. (2025), I binned decoding accuracy separately for the  near and far trials based on each stimulus’s boundary distance, and I restricted the ANOVA to near-trial accuracies for the two linear tasks and two linear boundaries, which is the subset that produced the Task × Boundary interaction in the published study. 
 
-****key reproducibility criteria**** add this!
+As a visual check, I also plotted the overall decoding accuracy patterns (Figure 2A-C of the original paper) to confirm that my pattern of results matched those of Henderson et al. (2025) for the classifier predicting Linear-1 category, classifier predicting Linear-2 category, and classifier predicting Nonlinear category.
 
+Specifically, I expect to see higher accuracy for the Linear tasks than the Nonlinear task, with a similar pattern of accuracies (and significance) across ROIs. I will consider the replication successful if I can reproduce both this overall pattern of classifier accuracy and the significant Task × Boundary interaction (Linear-2 > Linear-1 for near trials).
 
-As a visual check, I plotted the overall decoding accuracy patterns shown in Figure 2A–C to confirm that the pattern of results matches the original paper (I understand the exact means may shift). Specifically, I expect to see higher accuracy for the Linear tasks than the Nonlinear task, with a similar pattern of accuracies (and significance) across ROIs. I will consider the replication successful if I can reproduce both this overall pattern of classifier accuracy and the significant Task × Boundary interaction (Linear-2 > Linear-1 for near trials).
+****Key Reproducibility Criteria**** I defined reproducibility success as. . . . 
+
 
 ****key reproducibility criteria**** add this!
 
