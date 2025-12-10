@@ -10,13 +10,13 @@ format:
     self-contained: true
 ---
 
-<!-- Replication reports should all use this template to standardize reporting across projects.  These reports will be public supplementary materials that accompany the summary report(s) of the aggregate results. -->
-
 **Links**
-
 - [GitHub Repo](https://github.com/Lena-Kemmelmeier/henderson2025)
-- [Original Paper folder](https://github.com/Lena-Kemmelmeier/henderson2025/tree/main/original_paper)
 - [Original Paper (PDF)](https://github.com/Lena-Kemmelmeier/henderson2025/blob/main/original_paper/henderson_2025.pdf){target=_blank}
+
+<!--
+Need to add link to pre-registration here!! Make sure I find the updated one.
+!-->
 
 ## Introduction
 
@@ -24,14 +24,14 @@ format:
 Henderson et al. (2025) investigated the neural mechanisms of dynamic categorization, specifically how visual cortex adapts its responses to shape stimuli under different decision-rule (categorization) contexts. Each participant categorized novel stimuli along two linear (Linear-1, Linear-2) boundaries and a Nonlinear boundary across three fMRI sessions. Behavioral performance (accuracy and reaction time) and decoding of voxel activation patterns suggested that sensory shape representations adapted to support the discrimination of the *currently* relevant categories, particularly when categorization was most difficult (i.e., when shapes were near, rather than far from, the decision boundary). Altogether, these findings suggest that early sensory areas may contribute to flexible decision making.
 
 **Reproducibility Check**  
-In the original study, the authors trained logistic regression classifiers to predict category membership for the Linear-1, Linear-2, and Nonlinear boundaries using voxel activation patterns from several visual ROIs. Henderson et al. (2025) reported that classifier accuracy depended on the current task (i.e., which boundary participants were using at that moment). A three-way ANOVA including ROI, Task, and Boundary showed that when participants performed the Linear-2 task, the Linear-2 classifier was better at predicting a shape’s category than the Linear-1 classifier. This effect was specific to shapes near the decision boundary (Task × Boundary: *F*(1,9) = 8.99, *p* = .011, ηₚ² = 0.50). The authors interpreted this interaction as evidence that the structure of category representations (i.e., which boundary best separates neural patterns) shifts depending on the task context.
-
-I aimed to reproduce this Task × Boundary interaction. I also attempted to reproduce the broad pattern of classifier accuracies reported in the original paper: decoding accuracies should be highest in early visual ROIs (V1, V2, V3) and lowest in later visual ROIs (e.g., IPS), and accuracy for the Nonlinear classifier should be lower than for the Linear-1 and Linear-2 classifiers.
+In the original study, the authors trained classifiers to predict category membership for the three boundary conditions using voxel activation patterns. They found that classifier accuracy depended on the current task (i.e., which boundary participants were using at that moment). For exampke, a three-way ANOVA including ROI, Task, and Boundary showed that when participants performed the Linear-2 task, the Linear-2 classifier was better at predicting a shape’s category than the Linear-1 classifier, specifically for shapes near the decision boundary (Task × Boundary: *F*(1,9) = 8.99, *p* = .011, ηₚ² = 0.50). The authors interpreted this interaction as evidence that shape representations adapt to become more separable across the *currently* relevant boundary. I aimed to reproduce this Task × Boundary interaction. I also attempted to reproduce their broad pattern of classifier accuracies: decoding accuracies should be highest in early visual ROIs (V1, V2, V3) and lowest in later visual ROIs (e.g., IPS), and accuracy for the Nonlinear classifier should be lower than for the Linear-1 and Linear-2 classifiers.
 
 **Simulation**  
 Separate from this reproducibility test, I created a new sample of novel shape stimuli that varied continuously across two features and examined whether they yielded the same key properties of the original set. Particularly, I checked that the new stimuli roughly conformed to a two-dimensional shape space after dimensionality reduction, and whether, perceptually, stimuli were most separable across the Linear-2 and Linear-1 categories compared to the Nonlinear category, as in Henderson et al. (2025).
 
 <!--
+OLD SECTIONS:
+
 **Justification**  
 I will simulate data, rather than conduct an experiment, as my research does not lend itself to data collection this quarter. The research questions of Henderson et al. (2025) do not directly overlap with my first-year project; however, I chose to work with this study because it was led by former lab members and offers a unique opportunity to get familiar with pipelines and techniques that I may use in future projects, and which are broadly applicable to my research in human visual cognition. In attempting to reproduce a statistical result based on the decoding of voxel activation patterns (crucial to the paper’s main claim), I can gain familiarity with classification pipelines. I recognize that simulating fMRI data may fall a bit beyond the scope of this quarter, so instead, I plan to gain experience generating a new stimulus set and working with vision models like SimCLR and GIST in order to check the structure of the stimuli and their separability across boundaries. Taking these separate routes for the reproducibility check and simulation portions of the project will allow me to gain proficiency in different techniques valuable to my training in the Serences Lab.
 
@@ -47,6 +47,8 @@ Afterward, I will apply principal component analysis (PCA) on the GIST features 
 
 For this simulation portion, I think a main challenge will be figuring out how to create the new stimuli – I am not familiar with generating novel stimuli that fit certain parameters of dimensionality. Moreover, although the computer vision models used here are already implemented, I do not have first-hand experience using them.
 -->
+
+(i.e., which boundary best separates neural patterns) shifts depending on the task context.
 
 ## Methods
 
