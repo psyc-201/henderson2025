@@ -1,5 +1,5 @@
 ---
-title: "Replication of Henderson et al. (2025, Nature Communications)"
+title: "Reproducibility of Henderson et al. (2025, Nature Communications)"
 author: "Lena L. Kemmelmeier (lkemmelmeier@ucsd.edu)"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 format:
@@ -10,24 +10,18 @@ format:
     self-contained: true
 ---
 
-**Links**
-- [GitHub Repo](https://github.com/Lena-Kemmelmeier/henderson2025)
-- [Original Paper (PDF)](https://github.com/Lena-Kemmelmeier/henderson2025/blob/main/original_paper/henderson_2025.pdf){target=_blank}
-
-<!--
-Need to add link to pre-registration here!! Make sure I find the updated one.
-!-->
+## Links  
+- [GitHub Repo](https://github.com/Lena-Kemmelmeier/henderson2025)  
+- [Henderson et al. (2025) Paper (PDF)](https://github.com/Lena-Kemmelmeier/henderson2025/blob/main/original_paper/henderson_2025.pdf){target=_blank}  
+- [Link to Pre-registration](https://doi.org/10.17605/OSF.IO/M7FYH)  
 
 ## Introduction
 
-**Summary of Original Study**  
+**Background: Original Study**  
 Henderson et al. (2025) investigated the neural mechanisms of dynamic categorization, specifically how visual cortex adapts its responses to shape stimuli under different decision-rule (categorization) contexts. Each participant categorized novel stimuli along two linear (Linear-1, Linear-2) boundaries and a Nonlinear boundary across three fMRI sessions. Behavioral performance (accuracy and reaction time) and decoding of voxel activation patterns suggested that sensory shape representations adapted to support the discrimination of the *currently* relevant categories, particularly when categorization was most difficult (i.e., when shapes were near, rather than far from, the decision boundary). Altogether, these findings suggest that early sensory areas may contribute to flexible decision making.
 
-**Reproducibility Check**  
-In the original study, the authors trained classifiers to predict category membership for the three boundary conditions using voxel activation patterns. They found that classifier accuracy depended on the current task (i.e., which boundary participants were using at that moment). For exampke, a three-way ANOVA including ROI, Task, and Boundary showed that when participants performed the Linear-2 task, the Linear-2 classifier was better at predicting a shape’s category than the Linear-1 classifier, specifically for shapes near the decision boundary (Task × Boundary: *F*(1,9) = 8.99, *p* = .011, ηₚ² = 0.50). The authors interpreted this interaction as evidence that shape representations adapt to become more separable across the *currently* relevant boundary. I aimed to reproduce this Task × Boundary interaction. I also attempted to reproduce their broad pattern of classifier accuracies: decoding accuracies should be highest in early visual ROIs (V1, V2, V3) and lowest in later visual ROIs (e.g., IPS), and accuracy for the Nonlinear classifier should be lower than for the Linear-1 and Linear-2 classifiers.
-
-**Simulation**  
-Separate from this reproducibility test, I created a new sample of novel shape stimuli that varied continuously across two features and examined whether they yielded the same key properties of the original set. Particularly, I checked that the new stimuli roughly conformed to a two-dimensional shape space after dimensionality reduction, and whether, perceptually, stimuli were most separable across the Linear-2 and Linear-1 categories compared to the Nonlinear category, as in Henderson et al. (2025).
+**Reproducibility & Simulation Aims**  
+In the original study, the authors trained classifiers to predict category membership using voxel activation patterns (one for each boundary condition). They found that classifier accuracy depended on the current task (i.e., which boundary participants were using at that moment). For example, a three-way ANOVA including ROI, Task, and Boundary showed that when participants performed the Linear-2 task, the Linear-2 classifier was better at predicting a shape’s category than the Linear-1 classifier, specifically for shapes near the decision boundary (Task × Boundary: *F*(1,9) = 8.99, *p* = .011, ηₚ² = 0.50). The authors interpreted this as evidence that shape representations adapt to become more separable across the *currently* relevant boundary. I aimed to reproduce this Task × Boundary interaction. I also attempted to reproduce their broad pattern of classifier accuracies: decoding accuracies should be highest in early visual ROIs (V1, V2, V3) and lowest in later visual ROIs (e.g., IPS), and accuracy for the Nonlinear classifier should be lower than for the Linear-1 and Linear-2 classifiers. Separately, I created a new sample of novel shape stimuli that varied continuously across two features (contours) and examined whether they yielded the same key properties of the original set. Specifically, I checked that these new stimuli roughly conformed to a two-dimensional space after dimensionality reduction, and whether stimuli were most perceotually separable across the Linear-2 and Linear-1 categories compared to the Nonlinear category, as in the original study.
 
 <!--
 OLD SECTIONS:
@@ -48,27 +42,25 @@ Afterward, I will apply principal component analysis (PCA) on the GIST features 
 For this simulation portion, I think a main challenge will be figuring out how to create the new stimuli – I am not familiar with generating novel stimuli that fit certain parameters of dimensionality. Moreover, although the computer vision models used here are already implemented, I do not have first-hand experience using them.
 -->
 
-(i.e., which boundary best separates neural patterns) shifts depending on the task context.
-
 ## Methods
 
 ### Reliability and Validity
-The authors did not report any metrics relating to the reliability of their data (I added this section as part of our in class exercise).
+The authors did not include any reliability metrics for their data.
 
 ### Power Analysis
-A post-hoc power analysis showed that the current sample (N = 10) provided 76% power to detect the observed two-way interaction (ηₚ² = .50, Cohen’s f = 0.999) at α = .05. To achieve 80%, 90% and 95% power, the study would have needed to collect sample sizes of approximately 11, 14, and 16, respectively.
+A post-hoc power analysis showed that the current sample (N = 10) provided 76% power to detect the observed two-way interaction (ηₚ² = .50, Cohen’s f = 0.999) at α = .05. To achieve 80%, 90% and 95% power, the original study would have needed to collect sample sizes of approximately 11, 14, and 16 participants, respectively.
 
 ### Sample
-Ten participants (7 female) underwent three fMRI sessions, during which they completed a shape categorization task. Participants were recruited from the UCSD community, and were between 24 and 33 (M: 28.2, SD: 3.0) years old. All participants met inclusion criteria of having normal or corrected-to-normal vision.
+In the original study, ten participants (7 female) underwent three fMRI sessions, during which they completed a shape categorization task. Participants were recruited from the UCSD community, and were between 24 and 33 (M: 28.2, SD: 3.0) years old. All participants met inclusion criteria of having normal or corrected-to-normal vision.
 
 ### Materials
 
 **Shape Stimuli**
-The below section is adapted from Henderson et al. (see quoted excerpt below). I will follow the same overall procedure for constructing a two-dimensional shape space but will vary a different pair of radial frequency components (RFCs) than those used in the original study. Each RFC defines a sinusoidal modulation of a base circle’s radius as a function of angle, and varying its amplitude changes the prominence of that modulation in the contour. As in the original design, the amplitudes of two RFCs will be systematically varied while the remaining RFCs are held constant. These two amplitude values define the x and y coordinates of a continuous two-dimensional shape space, where each coordinate pair corresponds to a unique silhouette.
+I closely followed the original protocol when it came to constructing my shape stimuli. In order to create a different stimulus set, I varied a different pair of radial frequency components (RFCs, contours) than those used in the original study. Each RFC defined a sinusoidal modulation of a base circle’s radius as a function of angle, and varying its amplitude changed the prominence of that modulation in the contour. As in the original design, the amplitudes of two RFCs was systematically varied while the remaining RFCs were held constant. These two amplitude values defined the x and y coordinates of a continuous two-dimensional shape space, where each coordinate pair represented to a unique shape.
 
-The manipulation of RFC amplitude defines an x/y grid that spans positions between 0 and 5 arbitrary units, representing relative changes in modulation strength. In contrast to the original 4x4 grid of 16 stimuli with coordinates [0.1, 1.7, 3.3, 4.9], I will generate a 6x6 grid of 36 stimuli covering the same range. Grid positions will be evenly spaced and slightly inset from the edges ([0.1, 1.06, 2.02, 2.98, 3.94, 4.9]). This denser grid sampled from the shape space leads to smoother transitions between neighboring shapes. The overall coordinate system (0–5 range with a midpoint at 2.5) will be the same.
+The manipulation of RFC amplitude defined an x/y grid that spans positions between 0 and 5 arbitrary units, representing relative changes in modulation strength. In contrast to the original 4x4 grid of 16 stimuli with coordinates [0.1, 1.7, 3.3, 4.9], I instead generated a 6x6 grid of 36 stimuli covering the same range. Grid positions were evenly spaced and slightly inset from the edges ([0.1, 1.06, 2.02, 2.98, 3.94, 4.9]). This denser grid sampled from the shape space led to smoother transitions between neighboring shapes. The overall coordinate system (0–5 range with a midpoint at 2.5) was the same.
 
-"We used a set of shape silhouette stimuli that varied parametrically along two continuous dimensions, generating a 2-dimensional shape space (Fig. 1A). Each shape in this space was a closed contour composed of RFCs29,30. Each shape was composed of 7 different RFCs, where each component has a frequency, amplitude, and phase. We selected these stimuli because they can be represented in a low-dimensional grid-like coordinate system, but are more complex and abstract relative to simpler stimuli such as oriented gratings. Importantly, the changes along each axis in the shape space involve variability in multiple regions of the image, so categorizing the shapes correctly required participants to integrate information globally across the image, rather than focusing on a single part of the shape. For example, to categorize the shapes along axis 1 (Fig. 1A), it might be necessary to integrate information about both the size of the top left lobe, and the shape of the protrusion on the right side. Thus, it would not be possible to categorize the shapes by attending to one focal spatial location only.
+***Shape Protocol of Henderson et al.*** "We used a set of shape silhouette stimuli that varied parametrically along two continuous dimensions, generating a 2-dimensional shape space (Fig. 1A). Each shape in this space was a closed contour composed of RFCs29,30. Each shape was composed of 7 different RFCs, where each component has a frequency, amplitude, and phase. We selected these stimuli because they can be represented in a low-dimensional grid-like coordinate system, but are more complex and abstract relative to simpler stimuli such as oriented gratings. Importantly, the changes along each axis in the shape space involve variability in multiple regions of the image, so categorizing the shapes correctly required participants to integrate information globally across the image, rather than focusing on a single part of the shape. For example, to categorize the shapes along axis 1 (Fig. 1A), it might be necessary to integrate information about both the size of the top left lobe, and the shape of the protrusion on the right side. Thus, it would not be possible to categorize the shapes by attending to one focal spatial location only.
 
 To generate the 2-dimensional shape space, we parametrically varied the amplitude of two RFCs, leaving the others constant. The manipulation of RFC amplitude was used to define an x/y grid in arbitrary units that spanned positions between 0 and 5 arb. units, with adjacent grid positions spaced by 0.1 arb. units. All shape space positions on all trials were sampled from this grid of shape space positions. We also defined a coarser grid of 16 points (a 4 × 4 grid) which was used to generate the 16 stimuli that were shown on the majority of trials; this grid is referred to as the “main grid”, and included all x/y combinations of the points [0.1, 1.7, 3.3, 4.9] in shape space coordinates. Stimuli corresponding to points in shape space that were not part of the main grid were used to make the tasks more difficult, see Main task design for details.
 
@@ -77,10 +69,7 @@ We divided the shape space into four quadrants by imposing boundaries at the cen
 
 ### Procedure	
 
-**Main Task**
-This text below is directly quoted from Henderson et. al, and describes the shape categorization task with the three different decision boundary manipulations as well as the general procedure of the experiment. I will not be reproducing/simulating behavioral results so this was 'followed precisely.''
-
-"The main experimental task consisted of categorizing shape silhouette stimuli (Fig. 1) into binary categories. There were three task conditions: Linear-1, Linear-2, and Nonlinear, each of which corresponded to a different binary categorization rule. Shape stimuli were drawn from a two-dimensional shape space coordinate system (see Shape stimuli). The Linear-1 and Linear-2 tasks used a boundary that was linear in this shape space, while the Nonlinear task used a boundary that was Nonlinear in this shape space (requiring participants to group non-adjacent quadrants into a single category, see Fig. 1 for illustration). Each trial consisted of the presentation of one shape for 1 s, and trials were separated by an inter-trial interval (ITI) that was variable in length, uniformly sampled from the interval 1–5 s. Participants responded on each trial with a button press (right index or middle finger) to indicate which binary category the currently viewed shape fell into; the mapping between category and response was counter-balanced within each scanning session. Participants were allowed to make a response anytime within the window of 2 s from stimulus onset. Feedback was given at the end of each run, and included the participant’s overall accuracy, as well as their accuracy broken down into “easy” and “hard” trials (see next paragraph for description of hard trials), and the number of trials on which they failed to respond. No feedback was given after individual trials.
+***Main Task Procedure of Henderson et al.***  "The main experimental task consisted of categorizing shape silhouette stimuli (Fig. 1) into binary categories. There were three task conditions: Linear-1, Linear-2, and Nonlinear, each of which corresponded to a different binary categorization rule. Shape stimuli were drawn from a two-dimensional shape space coordinate system (see Shape stimuli). The Linear-1 and Linear-2 tasks used a boundary that was linear in this shape space, while the Nonlinear task used a boundary that was Nonlinear in this shape space (requiring participants to group non-adjacent quadrants into a single category, see Fig. 1 for illustration). Each trial consisted of the presentation of one shape for 1 s, and trials were separated by an inter-trial interval (ITI) that was variable in length, uniformly sampled from the interval 1–5 s. Participants responded on each trial with a button press (right index or middle finger) to indicate which binary category the currently viewed shape fell into; the mapping between category and response was counter-balanced within each scanning session. Participants were allowed to make a response anytime within the window of 2 s from stimulus onset. Feedback was given at the end of each run, and included the participant’s overall accuracy, as well as their accuracy broken down into “easy” and “hard” trials (see next paragraph for description of hard trials), and the number of trials on which they failed to respond. No feedback was given after individual trials.
 
 Each run in the task consisted of 48 trials and lasted 261 s (327 TRs). Of the 48 trials, 32 of these used shapes that were sampled from a grid of 16 points evenly spaced within shape space (“main grid”, see Shape stimuli), each repeated twice. These 16 shapes were presented twice per run regardless of task condition. The remaining 16 trials (referred to as “hard” trials) used shapes that were variable depending on the current task condition and the difficulty level set by the experimenter. The purpose of these trials was to allow the difficulty level to be controlled by the experimenter so that task accuracy could be equalized across all task conditions, and prevent any single task from being trivially easy for each participant. For each run of each task, the experimenter selected a difficulty level between 1 and 13, with each level corresponding to a particular bin of distances from the active categorization boundary (higher difficulty denotes closer distance to boundary). These difficulty levels were adjusted on each run during the session by the experimenter, based on performance on the previous run, with the goal of keeping the participant accuracy values within a stable range for all tasks (target range was around 80% accuracy). For the Nonlinear task, the distance was computed as a linear distance to the nearest boundary. The “hard” trials were generated by randomly sampling 16 shapes from the specified distance bin, with the constraint that 4 of the shapes had to come from each of the four quadrants in shape space. This manipulation ensured that responses were balanced across categories within each run. For many of the analyses presented here, we excluded these hard trials, focusing only on the “main grid” trials where the same images were shown across all task conditions.
 
@@ -92,11 +81,11 @@ Before the scan sessions began, participants were trained to perform the shape c
 ### Analysis Plan
 
 **Binary Classifier Analysis**
-**I plan to assess whether I can reproduce the reported Task × Boundary interaction effect on decoding accuracy from the ANOVA that included ROI, Task, and Boundary on voxel activation data.** My dependent variable will be classifier accuracy computed for each participant across ROI, Task, Boundary, and Distance (near vs. far). I will implement the decoding pipeline from scratch in Python, using the preprocessed voxel time course data available on OSF rather than the raw fMRI files, get these classifier accuracies.
+**I plan to assess whether I can reproduce the reported Task × Boundary interaction effect on decoding accuracy from the ANOVA that included ROI, Task, and Boundary on voxel activation data.** My dependent variable was classifier accuracy computed for each participant across ROI, Task, Boundary, and trial (near vs. far). I will implement the decoding pipeline from scratch in Python, using the preprocessed voxel time course data available on OSF rather than the raw fMRI files, get these classifier accuracies.
 
 Specifically (in like with Henderson et. al), I will train a binary logistic regression classifier to predict category membership (Category A vs. Category B) from voxel activation patterns within each ROI. Classification will be run separately for each task and boundary type using a leave-one-run-out cross-validation setup. I will then run a repeated-measures ANOVA on mean decoding accuracy with factors ROI, Task, Boundary, and Distance, focusing on the Task × Boundary interaction for near trials.
 
-As a visual check, I will plot the overall decoding accuracy patterns shown in Figure 2A–C to confirm that the pattern of results matches the original paper (I understand the exact means may shift). Specifically, I expect to see higher accuracy for the Linear tasks than the Nonlinear task, with a similar pattern of accuracies (and significance) across ROIs. I will consider the replication successful if I can reproduce both this overall pattern of classifier accuracy and the significant Task × Boundary interaction (Linear-2 > Linear-1 for near trials).
+As a visual check, I plotted the overall decoding accuracy patterns shown in Figure 2A–C to confirm that the pattern of results matches the original paper (I understand the exact means may shift). Specifically, I expect to see higher accuracy for the Linear tasks than the Nonlinear task, with a similar pattern of accuracies (and significance) across ROIs. I will consider the replication successful if I can reproduce both this overall pattern of classifier accuracy and the significant Task × Boundary interaction (Linear-2 > Linear-1 for near trials).
 
 **Image Similarity & Feature Space Analyses**
 For my simulation portion of this project, I plan to replicate this section exactly (see quoted section below), using the SimCLR and GIST scripts from the authors’ GitHub repository. I will also extract features from each of my newly generated stimuli and run a simple PCA to check that the feature space captures a clear two-dimensional structure, visualized separately for each shape dimension to make sure the model representations change smoothly along both axes of the shape space (like Figure 1C in the paper). Moreover, I anticipate seeing similar results as Figure 1D, where category separability is highest for the linear boundaries and lowest for the nonlinear boundary across both models, with overall separability values being slightly higher for GIST compared to SimCLR. Again, category separability will be measured as how different images from separate categories were compared to images from within the same category. More specifically, as *(b − w)/(b + w)*, where *b* is the average Euclidean distance between categories and *w* is the average distance within categories, computed from pairwise feature vectors from the GIST and SimCLR models.
@@ -108,12 +97,11 @@ Using these activations, we computed the separability of shape categories across
 This simulation analysis is meant to complement the fMRI decoding results by testing whether similar patterns show up just from the visual features of the stimuli themselves. If GIST and SimCLR both show higher separability for the linear boundaries than for the nonlinear boundary, that would suggest that part of the effect seen in visual cortex could be explained by the image properties alone. But if that same pattern doesn’t appear in the feature-space models, it would suggest that task demands, not just low-level visual differences, shape how these stimuli are represented in the brain.
 
 ### Differences from Original Study
-
-I will use the preprocessed voxel activation data they shared instead of reanalyzing the raw fMRI data, and am only reproducing the decoding and ANOVA portions rather than the full fMRI acquisition. I plan to rebuild the binary decoding and ANOVA pipeline in Python as a training exercise. I will not be reproducing the behavioral data analysis.
+I used the preprocessed voxel activation data they shared instead of reanalyzing the raw fMRI data, and only reproduced the decoding and ANOVA portions rather than the full fMRI acquisition and behavioral data analysis. I also re-implemented the binary decoding and ANOVA pipeline from scratch.  
 
 For the simulation part, I will make a new set of two-dimensional shape stimuli that follow the same general structure as the original ones but vary a different pair of radial frequency components. Instead of the original 4x4 grid, I will use a denser 6x6 grid so the changes between neighboring shapes are smoother. I will then run these new shapes through the GIST and SimCLR models to see how separable the categories are across different boundaries. The goal is not to reproduce participants’ neural or behavioral responses, but to see whether similar structure shows up just from the visual features of the images, while also gaining practice generating and analyzing new stimuli.
 
-## Progress Check 2 (Reproducibility)
+<!-- ## Progress Check 2 (Reproducibility)
 **Again, I am assessing whether I can reproduce the reported Task × Boundary interaction effect on decoding accuracy from the three-way ANOVA that included ROI, Task, and Boundary on voxel activation data.** My dependent variable is classifier accuracy computed for each participant across ROI, Task, and Boundary conditions focusing on the 'near' trials (trials where the shape to be categorized was close to the decision boundary). 
 
 So far, I've implemented the binary decoding pipeline from scratch in Python following their leave-one-run-out cross-validation setup. I use the preprocessed data available on OSF rather than raw fMRI files (which are not available) to obtain these classifier accuracies. It looks like the decoding pipeline works when I examine a few participants, but it does take a bit of time to run all ten, so I plan to let it run on one of our lab's remote neurocomputing servers. The steps I've taken seem to align with what they describe in-text.
@@ -143,13 +131,12 @@ I also ran the 3-way ANOVA (ROI × Task × Boundary) on the classification accur
 
 I also made progress on the simulation portion of my experience (creating a new batch of stimuli). Specifically, I created the 36 images that are a part of the 6x6 array I described above (see Figure 4 below, where I arranged them all in the grid). The authors had about a dozen different scripts in Matlab that they used for stimulus generation. I re-purposed/implemented the legacy functions they used (giving proper credit), and basically re-consolidated all the functionality to one script. I varied the amplitude of 2 RFCs different from the ones the authors used. I also chose to use a different "shape family." My next step will be running the images through the computer vision models, then calculating category separability and running PCA.
 
-![6×6 RFC blob grid.](../stimuli/new_blob_stim/grid_montage.png){#fig-blobgrid fig-cap="Blob grid (6×6) spanning 0–5 RFC amplitudes on each axis." fig-alt="36 grayscale blob silhouettes arranged in a 6×6 grid." width="50%" fig-align="center"}
+![6×6 RFC blob grid.](../stimuli/new_blob_stim/grid_montage.png){#fig-blobgrid fig-cap="Blob grid (6×6) spanning 0–5 RFC amplitudes on each axis." fig-alt="36 grayscale blob silhouettes arranged in a 6×6 grid." width="50%" fig-align="center"} -->
 
-**Link to Preregistration** [OSF Link](https://doi.org/10.17605/OSF.IO/M7FYH)
 
-As a side note, I've doing most of my Python coding (especially for the classification) within .py files in the Spyder IDE. I do have a .qmd version of the classification pipeline (understand this is more in line with the class objectives, especially because Quarto/Pixi lend themselves to reproducibility), but it's been MUCH easier for me to crash-test my code in Spyder's IDE. Moreover, I ran the models on one of the external neurocomputing servers in a .py file because it was easiest for me. Once everything is finalized, I'll update/shift any scripts over to be .qmd.
+<!-- As a side note, I've doing most of my Python coding (especially for the classification) within .py files in the Spyder IDE. I do have a .qmd version of the classification pipeline (understand this is more in line with the class objectives, especially because Quarto/Pixi lend themselves to reproducibility), but it's been MUCH easier for me to crash-test my code in Spyder's IDE. Moreover, I ran the models on one of the external neurocomputing servers in a .py file because it was easiest for me. Once everything is finalized, I'll update/shift any scripts over to be .qmd. -->
 
-## "Ready to Run" Progress Check
+<!-- ## "Ready to Run" Progress Check
 I de-bugged my code for reproducing the ANOVA Task x Boundary interaction -- it turns out there was an issue with how I masked near vs. far trials (only near trials were included in this analysis, and the issue was in how I defined these). **I successfully reproduced their result, as the effect size of this interaction, ηₚ² = .48, was close to the one in the original study, ηₚ² = .50, and also significant (see Figure 5).**
 
 ![Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary.](../bold_decoding_anova_results/figs/Table1_LINEAR_NEARONLY_replica_APA.png){#fig-blobgrid fig-cap="" fig-alt="Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary." width="100%" fig-align="center"}
@@ -160,11 +147,8 @@ I de-bugged my code for reproducing the ANOVA Task x Boundary interaction -- it 
 
 ![Visualization of a principal components analysis (PCA) performed on the GIST model features.](../image_similarity/image_gist_pca.png){#fig-blobgrid fig-cap="Each plotted point represents one shape in PC space, colored according to the coordinate value along axis 1 (left) or axis 2 (right)." fig-alt="Visualization of a principal components analysis (PCA) performed on the GIST model features, where each plotted point represents one shape in PC space, colored according to the coordinate value along axis 1 (left) or axis 2 (right)." width="100%" fig-align="center"}
 
-**What's left?** I plan to fix up my repo by cleaning up the file structure, updating the ReadMe, and checking compatibility with Pixi (which may/will likely include shifting files to either be qmd/Jupyter notebooks). I will also keep working on phasing out the helpers I used in the reproduction aim (the authors' code for loading in the mat files w/ the voxel activation data). I may run an exploratory analysis pending my progress on these items.
+**What's left?** I plan to fix up my repo by cleaning up the file structure, updating the ReadMe, and checking compatibility with Pixi (which may/will likely include shifting files to either be qmd/Jupyter notebooks). I will also keep working on phasing out the helpers I used in the reproduction aim (the authors' code for loading in the mat files w/ the voxel activation data). I may run an exploratory analysis pending my progress on these items. -->
 
-**3. Identify one insight your simulation gave you about the strengths or limitations of the original experimental design.** Running my 6×6 RFC grid through GIST and SimCLR made me appreciate how carefully the original stimulus space was put together. Once I generated my own set and looked at the feature distances, it was obvious that the two axes vary smoothly and predictably, and that the different category boundaries carve up the space in meaningful ways rather than by accident. This helped me see why the authors’ design works so well. The nonlinear boundary in particular cuts across parts of the space that are not naturally separated in visual feature space, which means that any neural differences they report there are harder to explain as simple perceptual effects. Overall, the simulation made the rigor of the stimulus construction much more apparent and gave me a better sense of how intentionally the task and stimuli were aligned.
-
-**4. How would this simulation help you design a follow-up experiment with a similar paradigm?** Doing both the reproduction and simulation parts of this project was useful training for me. Recreating the decoding pipeline helped me understand the structure of the fMRI data at the voxel level and how much the analysis depends on organizing runs, ROIs, and trial labels cleanly. It also gave me more hands-on practice with supervised classification, which I have done before in Python but was still a helpful refresher. On the simulation side, generating my own RFC grid and running it through GIST and SimCLR helped me get more familiar with these computer vision models, even if I was mainly downloading and running the pre-trained versions. Working through that made it easier to see how different manipulations show up in feature space and how the category boundaries relate to those differences. Combining these pieces made the overall workflow feel more transparent. If I were to design a follow-up experiment, I would feel more prepared to choose which RFCs to vary, how dense the stimulus grid should be, and how to structure the data so that later decoding is straightforward.
 
 ## Results
 
@@ -176,18 +160,6 @@ For image similarity (another note from Bria): For visualization, I would plan a
 ### Data preparation
 
 Data preparation following the analysis plan.
-	
-```{r include=F}
-### Data Preparation
-
-#### Load Relevant Libraries and Functions
-
-#### Import data
-
-#### Data exclusion / filtering
-
-#### Prepare data for analysis - create columns etc.
-```
 
 ### Confirmatory analysis
 
@@ -195,16 +167,22 @@ The analyses as specified in the analysis plan.
 
 *Side-by-side graph with original graph is ideal here*
 
-### Exploratory analyses
-
-Any follow-up analyses desired (not required).  
+See if there is any way to embed the plot code in here...? may be hard with how the pipeline is set up
 
 ## Discussion
 
-### Summary of Replication Attempt
+### Summary of Replication Attempt (Interpretation & Conclusion)
 
 Open the discussion section with a paragraph summarizing the primary result from the confirmatory analysis and the assessment of whether it replicated, partially replicated, or failed to replicate the original result.  
 
 ### Commentary
 
 Add open-ended commentary (if any) reflecting (a) insights from follow-up exploratory analysis, (b) assessment of the meaning of the replication (or not) - e.g., for a failure to replicate, are the differences between original and present study ones that definitely, plausibly, or are unlikely to have been moderators of the result, and (c) discussion of any objections or challenges raised by the current and original authors about the replication attempt.  None of these need to be long.
+
+**1. What assumptions does your generative model make about participant behavior, and which aspects of the real experiment does it simplify or omit?**
+
+**2. Show how your simulated dataset flows through your planned analysis pipeline. Does this recover any mismatches or bugs?**
+
+**3. Identify one insight your simulation gave you about the strengths or limitations of the original experimental design.** Running my 6×6 RFC grid through GIST and SimCLR made me appreciate how carefully the original stimulus space was put together. Once I generated my own set and looked at the feature distances, it was obvious that the two axes vary smoothly and predictably, and that the different category boundaries carve up the space in meaningful ways rather than by accident. This helped me see why the authors’ design works so well. The nonlinear boundary in particular cuts across parts of the space that are not naturally separated in visual feature space, which means that any neural differences they report there are harder to explain as simple perceptual effects. Overall, the simulation made the rigor of the stimulus construction much more apparent and gave me a better sense of how intentionally the task and stimuli were aligned.
+
+**4. How would this simulation help you design a follow-up experiment with a similar paradigm?** Doing both the reproduction and simulation parts of this project was useful training for me. Recreating the decoding pipeline helped me understand the structure of the fMRI data at the voxel level and how much the analysis depends on organizing runs, ROIs, and trial labels cleanly. It also gave me more hands-on practice with supervised classification, which I have done before in Python but was still a helpful refresher. On the simulation side, generating my own RFC grid and running it through GIST and SimCLR helped me get more familiar with these computer vision models, even if I was mainly downloading and running the pre-trained versions. Working through that made it easier to see how different manipulations show up in feature space and how the category boundaries relate to those differences. Combining these pieces made the overall workflow feel more transparent. If I were to design a follow-up experiment, I would feel more prepared to choose which RFCs to vary, how dense the stimulus grid should be, and how to structure the data so that later decoding is straightforward.
