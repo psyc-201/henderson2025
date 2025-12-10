@@ -51,7 +51,7 @@ The authors did not include any reliability metrics for their data.
 A post-hoc power analysis showed that the current sample (N = 10) provided 76% power to detect the observed two-way interaction (ηₚ² = .50, Cohen’s f = 0.999) at α = .05. To achieve 80%, 90% and 95% power, the original study would have needed to collect sample sizes of approximately 11, 14, and 16 participants, respectively.
 
 ### Sample
-In the original study, ten participants (7 female) underwent three fMRI sessions, during which they completed a shape categorization task. Participants were recruited from the UCSD community, and were between 24 and 33 (M: 28.2, SD: 3.0) years old. All participants met inclusion criteria of having normal or corrected-to-normal vision.
+In the original study, 10 participants (7 female) underwent three fMRI sessions, during which they completed a shape categorization task. Participants were recruited from the UCSD community, and were between 24 and 33 (M: 28.2, SD: 3.0) years old. All participants met inclusion criteria of having normal or corrected-to-normal vision.
 
 ### Materials
 
@@ -187,9 +187,9 @@ Open the discussion section with a paragraph summarizing the primary result from
 
 Add open-ended commentary (if any) reflecting (a) insights from follow-up exploratory analysis, (b) assessment of the meaning of the replication (or not) - e.g., for a failure to replicate, are the differences between original and present study ones that definitely, plausibly, or are unlikely to have been moderators of the result, and (c) discussion of any objections or challenges raised by the current and original authors about the replication attempt.  None of these need to be long.
 
-**1. What assumptions does your generative model make about participant behavior, and which aspects of the real experiment does it simplify or omit?**
+**1. What assumptions does your analytical model (e.g., the decoding framework) make about neural representations?**
 
-**2. Show how your simulated dataset flows through your planned analysis pipeline. Does this recover any mismatches or bugs?**
+**2. Walk through the main stages of your decoding pipeline and explain how a simulated or simplified dataset would move through each stage. What does this reveal about the assumptions built into your analysis?**
 
 **3. Identify one insight your simulation gave you about the strengths or limitations of the original experimental design.** Running my 6×6 RFC grid through GIST and SimCLR made me appreciate how carefully the original stimulus space was put together. Once I generated my own set and looked at the feature distances, it was obvious that the two axes vary smoothly and predictably, and that the different category boundaries carve up the space in meaningful ways rather than by accident. This helped me see why the authors’ design works so well. The nonlinear boundary in particular cuts across parts of the space that are not naturally separated in visual feature space, which means that any neural differences they report there are harder to explain as simple perceptual effects. Overall, the simulation made the rigor of the stimulus construction much more apparent and gave me a better sense of how intentionally the task and stimuli were aligned.
 
