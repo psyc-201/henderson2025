@@ -455,7 +455,7 @@ def get_main_grid():
 
     return main_grid_points
 
-def sep_and_sem(features, labels):
+def get_category_separability(features, labels):
     labels = np.array(labels).astype(int)
     assert np.array_equal(np.unique(labels), np.array([1, 2]))
     g1 = features[labels == 1, :]
@@ -470,16 +470,7 @@ def sep_and_sem(features, labels):
     w = np.mean(within)
     sep = (b - w) / (b + w)
 
-    var_b = np.var(between, ddof=1)/between.size
-    var_w = np.var(within, ddof=1)/within.size
-
-    D = (b + w)
-    df_db = (2.0 * w)/(D**2)
-    df_dw = (-2.0 * b)/(D**2)
-    var_sep = (df_db**2) * var_b + (df_dw**2) * var_w
-    sem_sep = np.sqrt(var_sep)
-
-    return sep, sem_sep
+    return sep
 #%% step 1: make the image brick for matlab
 
 prep_brick(debug=False)
@@ -556,7 +547,7 @@ f = np.concatenate(f, axis=1)
 f_simclr = f
 print('f_simclr shape:', f_simclr.shape)
 
-# load labels + get 4x4 main grid indices (for separability)
+# load labels + get 6x6 main grid indices (for separability)
 labs = pd.read_csv(os.path.join(feat_dir, 'Image_labels_grid3.csv'))
 pts = np.array([labs['coord_axis1'], labs['coord_axis2']]).T
 
@@ -577,49 +568,41 @@ simclr_sem = np.zeros((3,))
 
 for ai, axis in enumerate([1, 2, 3]):
     l = np.array(labs['labels_task%d' % axis])[gi].astype(int)
-    m_gist, s_gist = sep_and_sem(f_gist_main, l)
-    m_sim, s_sim = sep_and_sem(f_simclr_main, l)
+    m_gist = get_category_separability(f_gist_main, l)
+    m_sim = get_category_separability(f_simclr_main, l)
     gist_means[ai] = m_gist
     simclr_means[ai] = m_sim
-    gist_sem[ai] = s_gist
-    simclr_sem[ai] = s_sim
 
 print('gist_means:', gist_means)
 print('simclr_means:', simclr_means)
 
-# set up bar plot with 95% CI from sem
 plt.rcParams['pdf.fonttype'] = 42
 
 task_names = ['Linear (1)', 'Linear (2)', 'Nonlinear', 'Repeat']
 task_colors = np.flipud(cm.GnBu(np.linspace(0, 1, 5))[1:, :])
 
 vals = np.array([gist_means, simclr_means]).T  # (3 tasks x 2 models)
-g_err = 1.96 * gist_sem
-s_err = 1.96 * simclr_sem
 
 xjitter = np.linspace(-0.25, 0.25, 3)
 bw = np.diff(xjitter)[0] / 4 * 3
 
-plt.figure(figsize=(5, 4))
+plt.figure(figsize=(4, 4))
 ax = plt.subplot(1, 1, 1)
 
 error_kw = dict(lw=0.8, capsize=3, capthick=0.8, ecolor='k')
 
 for xi in range(2):
+    
     yvals = vals[:, xi]
-    if xi == 0:
-        yerr = g_err
-    else:
-        yerr = s_err
-    plt.bar(xi + np.array(xjitter), yvals, width=bw, color=task_colors[0:3, :], yerr=yerr, error_kw=error_kw)
+    plt.bar(xi + np.array(xjitter), yvals, width=bw, color=task_colors[0:3, :], error_kw=error_kw)
 
 plt.xticks(np.arange(2), ['GIST', 'SimCLR'])
-plt.ylabel('Category separability (a.u.)', fontsize=12)
-plt.yticks(fontsize=10)
-plt.xticks(fontsize=10)
+plt.ylabel('Category separability (a.u.)', fontsize=16)
+plt.yticks([0, 0.05, 0.10, 0.15, 0.20],fontsize=20) # hard-coding these to match henderson et al.
+plt.xticks(fontsize=20)
 
-y_max = np.max(np.vstack([gist_means + g_err, simclr_means + s_err]))
-plt.ylim([0, y_max * 1.2])
+# visually doing the same y-ticks as henderson et al.
+plt.ylim([0, 0.21])
 
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
@@ -630,13 +613,14 @@ ax.legend(handles, task_names[0:3], title='Task', frameon=False, loc='upper left
 
 figname = os.path.join(image_sim_dir, 'image_category_sep.png')
 plt.savefig(figname, dpi=600, bbox_inches='tight')
+plt.show()
 print('saved:', figname)
 
 source_df = pd.DataFrame(vals, index=task_names[0:3], columns=['GIST', 'SimCLR'])
 
 #%% step 5: pca on gist features + scatter plots
 
-# run pca on gist features (all 36 blobs)
+# run pca on gist features (all 36 blobs in the main grid)
 scores, wts, pre_mean, ev = compute_pca(f_gist, max_pc_to_retain=100, copy_data=True)
 print('scores shape:', scores.shape)
 
@@ -668,9 +652,9 @@ for ii in range(scores_all.shape[0]):
 ax1.set_aspect('equal', 'box')
 ax1.set_xticks([])
 ax1.set_yticks([])
-ax1.set_xlabel('PC 1')
-ax1.set_ylabel('PC 2')
-ax1.set_title('Colored by dimension 1')
+ax1.set_xlabel('PC 1', fontsize=20)
+ax1.set_ylabel('PC 2', fontsize=20)
+# ax1.set_title('Colored by dimension 1', fontsize=18)
 ax1.spines['top'].set_visible(False)
 ax1.spines['right'].set_visible(False)
 
@@ -680,25 +664,30 @@ for ii in range(scores_all.shape[0]):
 ax2.set_aspect('equal', 'box')
 ax2.set_xticks([])
 ax2.set_yticks([])
-ax2.set_xlabel('PC 1')
-ax2.set_ylabel('PC 2')
-ax2.set_title('Colored by dimension 2')
+ax2.set_xlabel('PC 1', fontsize=20)
+ax2.set_ylabel('PC 2', fontsize=20)
+# ax2.set_title('Colored by dimension 2', fontsize=18)
 ax2.spines['top'].set_visible(False)
 ax2.spines['right'].set_visible(False)
 
 # colorbar for axis 1 coords
 cb1 = plt.colorbar(cm.ScalarMappable(norm=norm1, cmap=cmap), cax=cax1, orientation='horizontal')
-cb1.set_label('axis 1 coordinate (arb. units)', fontsize=10)
-cb1.set_ticks([vmin1, vmax1])
-cb1.set_ticklabels(['%.2f' % vmin1, '%.2f' % vmax1])
+cb1.set_label('axis 1 coordinate (arb. units)', fontsize=14)
+# cb1.set_ticks([vmin1, vmax1])
+cb1.set_ticks([])
+# cb1.set_ticklabels(['%.2f' % vmin1, '%.2f' % vmax1])
+cb1.set_ticklabels([])
 cax1.tick_params(labelsize=9)
 
 # colorbar for axis 2 coords
 cb2 = plt.colorbar(cm.ScalarMappable(norm=norm2, cmap=cmap), cax=cax2, orientation='horizontal')
-cb2.set_label('axis 2 coordinate (arb. units)', fontsize=10)
-cb2.set_ticks([vmin2, vmax2])
-cb2.set_ticklabels(['%.2f' % vmin2, '%.2f' % vmax2])
+cb2.set_label('axis 2 coordinate (arb. units)', fontsize=14)
+# cb2.set_ticks([vmin2, vmax2])
+cb2.set_ticks([])
+# cb2.set_ticklabels(['%.2f' % vmin2, '%.2f' % vmax2])
+cb2.set_ticklabels([])
 cax2.tick_params(labelsize=9)
 
 figname = os.path.join(image_sim_dir, 'image_gist_pca.png')
 plt.savefig(figname, dpi=600, bbox_inches='tight')
+plt.show()
