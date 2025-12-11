@@ -50,7 +50,7 @@ This extension pipeline recreates the representational analyses from Henderson e
 - This step loads the PNGs and writes a single HDF5 file here: `image_similarity/features/images_all.h5py`
 
 3. Run MATLAB GIST and prepare SimCLR weights
-- Run the MATLAB GIST extraction script (get_gist.m) on the HDF5 image brick created in Step 1. This will produce the file: `image_similarity/features/gist/images_gistdescriptors_4ori_4blocks.h5py`
+- Run the MATLAB GIST extraction script `image_similarity/gist_matlab/get_gist.m` (uses the the HDF5 image brick we created). This will produce the file: `image_similarity/features/gist/images_gistdescriptors_4ori_4blocks.h5py`
 - Download the SimCLR checkpoint file `checkpoint_100.tar` from the [SimCLR GitHub releases page](https://pypi.org/project/simclr/).
 - Place the checkpoint inside: `image_similarity/features/simclr/` The Python feature extraction will not run until this file is present.
 
