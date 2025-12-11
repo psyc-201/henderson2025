@@ -54,10 +54,6 @@ from code_utils import data_utils
 data_root = os.path.join(root_dir, 'data')
 data_utils.root = data_root
 
-from code_utils import plot_utils as _plot_utils
-set_all_font_sizes = _plot_utils.set_all_font_sizes
-plot_multi_bars = _plot_utils.plot_multi_bars
-
 #%% Init variables
 
 num_participants = 10
