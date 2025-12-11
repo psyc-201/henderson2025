@@ -27,14 +27,14 @@ cd henderson2025
 - You may have to download these `Samples` files one-by-one then move them ALL into a folder called `Samples` that you make yourself (the zip file seemed to have issues on OSF)
 - Both `Samples` and `DataBehavior` should be nested within `data` 
 
-4. Open the file `reproducing_decoding_anova_result.py` in an IDE. Make sure you have built and activated the Python environment.
+4. Open the file `decoding_reproducibility/reproducing_decoding_anova_result.py` in an IDE. Make sure you have built and activated the Python environment.
 
 5. Run the script.  
 It will:
 - Load in the data from the .mat files and convert them into a Python format,
 - Perform decoding within each ROI,
 - Run a 3-way repeated-measures ANOVA (ROI × Task × Boundary),
-- Save figures and results to the `bold_decoding_anova_results/` folder.
+- Save figures and results to the `bold_decoding_anova_results/` folder. All outputted PNGs and CSVs are also available on on [OSF](https://osf.io/4p63n/files/osfstorage).
 
 ## How to Run the Simulation/Extension w/ New Stimuli
 This extension pipeline recreates the representational analyses from Henderson et al. (2025) using a new set of silhouette stimuli. The Python script is organized into clear `#%% step blocks`, but you must begin by generating the new stimulus images in MATLAB.
@@ -65,3 +65,15 @@ This extension pipeline recreates the representational analyses from Henderson e
 6. PCA visualization
 - Run the cell labeled: `#%% step 5: pca on gist features and scatter plots`
 - This produces a 2-panel PCA visualization saved as: `image_similarity/image_gist_pca.png`
+
+## Overview of directories
+- `writeup` - contains Quarto markdown file and rendered html report. Contains a subdirectory, `figs`, that houses the figures used in the markdown report. These are available on [OSF](https://osf.io/4p63n/files/osfstorage)
+- `image_similarity` - contains the main Python script as well as the `gist_matlab` and `features` subdirectories. The produced PNGs from this pipeline are available [here](https://osf.io/4p63n/files/osfstorage) under the `image_similarity` directory. All intermediate files: e.g., h5py, mat, and CSV files, are also available on this OSF link under the the subdirectories. 
+- `stimuli` - contains 'making_new_blobs.m` and output directory for newly generated shape stimuli
+- `post_hoc_power_analysis` - contains Python script to run simple post-hoc power analysis on the Task x Interaction effect of interest
+- `original_paper` - contains PDF copy of the Henderson et al. (2025) paper
+- `in_class_plotting_exercise` - contains Quarto markdown file to plot the reproduced Figure 2A-2C (decoding accuracy plots) in R
+- `image_similarity` - contains `features` and `gist` subdirectories which contain Gist and SimCLR implementation files. Also contains `image_similarity.py`
+- `decoding_reproducibility` - contains `reproducing_decoding_anova_result.py`
+- 
+
