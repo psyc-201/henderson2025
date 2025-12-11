@@ -55,7 +55,7 @@ This extension pipeline recreates the representational analyses from Henderson e
 - Place the checkpoint inside: `image_similarity/features/simclr/` The Python feature extraction will not run until this file is present.
 
 4. Extract SimCLR features (Python)
-- In 'image_similarity.py', run the cell labeled: `#%% step 3: extract simclr features with resnet`
+- In `image_similarity.py`, run the cell labeled: `#%% step 3: extract simclr features with resnet`
 - This step computes PCA-reduced features for blocks 2, 6, 12, and 15 and saves files such as: `image_similarity/features/simclr/images_simclr_block2_pca.npy`
 
 5. Compute category separability
@@ -65,4 +65,3 @@ This extension pipeline recreates the representational analyses from Henderson e
 6. PCA visualization
 - Run the cell labeled: `#%% step 5: pca on gist features and scatter plots`
 - This produces a 2-panel PCA visualization saved as: `image_similarity/image_gist_pca.png`
-
