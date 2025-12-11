@@ -68,7 +68,7 @@ This extension pipeline recreates the representational analyses from Henderson e
 - Run the cell labeled: `#%% step 5: pca on gist features and scatter plots`
 - This produces a 2-panel PCA visualization saved as: `image_similarity/image_gist_pca.png`
 
-## Overview of directories
+## Overview of Directories
 - `writeup` - contains Quarto markdown file and rendered html report. Contains a subdirectory, `figs`, that houses the figures used in the markdown report. These are available on [OSF](https://osf.io/4p63n/files/osfstorage) under the top-level `figs` directory
 - `image_similarity` - contains the main Python script as well as the `gist_matlab` and `features` subdirectories. The produced PNGs from this pipeline are available [here](https://osf.io/4p63n/files/osfstorage) under the `image_similarity` directory. All intermediate files: e.g., h5py, mat, and CSV files, are also available on this OSF link under the subdirectories nested within `image_similarity`. Basically contains all Gist and SimCLR implementation, along with `image_similarity.py`
 - `stimuli` - contains 'making_new_blobs.m` and output directory for newly generated shape stimuli
