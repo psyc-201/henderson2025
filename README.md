@@ -2,8 +2,10 @@
 This repository reproduces the ROI × Task × Boundary decoding analysis (near-trial ANOVA) reported in Henderson et al. (2025). It also re-creates Figure 2A–C to check whether the qualitative pattern of binary decoding accuracies emerges in an independent implementation.
 Beyond replication, the repository generates a new set of silhouette stimuli and evaluates their structure, including dimensionality and category separability under multiple decision boundaries.
 
+## Overview of this project is best summarized in the html file under the `writeup` directory.##
+
 ## Recreating the environment
-The file `henderson2025_env.yml` specifies the full conda + pip environment used to run all analyses. After cloning the repository (see steps below), build this environment on your machine:
+The file `henderson2025_env.yml` specifies the full conda + pip environment used to run all Python analyses. After cloning the repository (see steps below), build this environment on your machine:
 
 ```
 conda env create -f henderson2025_env.yml
@@ -68,7 +70,7 @@ This extension pipeline recreates the representational analyses from Henderson e
 
 ## Overview of directories
 - `writeup` - contains Quarto markdown file and rendered html report. Contains a subdirectory, `figs`, that houses the figures used in the markdown report. These are available on [OSF](https://osf.io/4p63n/files/osfstorage) under the top-level `figs` directory
-- `image_similarity` - contains the main Python script as well as the `gist_matlab` and `features` subdirectories. The produced PNGs from this pipeline are available [here](https://osf.io/4p63n/files/osfstorage) under the `image_similarity` directory. All intermediate files: e.g., h5py, mat, and CSV files, are also available on this OSF link under the subdirectories nested within `image_similarity`. Basically conyains all Gist and SimCLR implementation, along with `image_similarity.py`
+- `image_similarity` - contains the main Python script as well as the `gist_matlab` and `features` subdirectories. The produced PNGs from this pipeline are available [here](https://osf.io/4p63n/files/osfstorage) under the `image_similarity` directory. All intermediate files: e.g., h5py, mat, and CSV files, are also available on this OSF link under the subdirectories nested within `image_similarity`. Basically contains all Gist and SimCLR implementation, along with `image_similarity.py`
 - `stimuli` - contains 'making_new_blobs.m` and output directory for newly generated shape stimuli
 - `post_hoc_power_analysis` - contains Python script to run simple post-hoc power analysis on the Task x Interaction effect of interest
 - `original_paper` - contains PDF copy of the Henderson et al. (2025) paper
