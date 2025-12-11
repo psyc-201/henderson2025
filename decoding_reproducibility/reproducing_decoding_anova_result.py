@@ -3,12 +3,12 @@
 """
 Created on Mon Nov  3 14:43:25 2025
 
-@author: Lena L. Kemmelmeier
+@author: lenakemmelmeier
 
 Reproducing the binary decoding anova result from Henderson et al. (2025)
 """
 
-#%% set up environment - load in appropriate packages
+#%% set up environment - load in appropriate packages, setting paths
 
 import numpy as np
 import os # path handling, directory operations
@@ -33,7 +33,7 @@ import warnings # suppress noisy but harmless warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="scipy.io.matlab")
 warnings.filterwarnings("ignore", category=FutureWarning, module="sklearn.linear_model._logistic")
 
-# set a global seed so that logistic regression and cv splits are reproducible
+# set a global seed so things are reproducible/deterministic
 np.random.seed(0)
 
 # set up project-level paths (assumes this script lives in decoding_reproducibility/)
@@ -1119,7 +1119,7 @@ def subject_decoding_df_replica(sub_id):
 
 #%% one-time near/far sanity check (subject 01)
 
-# this sanity check confirms that near/far counts match the original expectations
+# this sanity check confirms that near/far counts match our expectations 
 test_sub = sub_ids[0]
 
 main_rois_chk, main_lab_chk, _ = load_main_data(test_sub)

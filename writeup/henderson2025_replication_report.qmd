@@ -99,7 +99,7 @@ For the simulation/extension aim, I generated a new set of two-dimensional shape
 ## Results
 
 ### Data preparation
-Data preparation following the analysis plan. [Just make a note that these occured in another script...]
+All data preparation and analysis scripts are available at the repository link above. 
 
 ### Confirmatory analysis
 **Binary Decoding of Voxel Activation Data (Reproducibility)**  
