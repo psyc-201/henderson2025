@@ -2,7 +2,7 @@
 This repository reproduces the ROI × Task × Boundary decoding analysis (near-trial ANOVA) reported in Henderson et al. (2025). It also re-creates Figure 2A–C to check whether the qualitative pattern of binary decoding accuracies emerges in an independent implementation.
 Beyond replication, the repository generates a new set of silhouette stimuli and evaluates their structure, including dimensionality and category separability under multiple decision boundaries.
 
-## Overview of this project is best summarized in the html file under the `writeup` directory.##
+## Overview of this project is best summarized in the html file under the `writeup` directory. ##
 
 ## Recreating the environment
 The file `henderson2025_env.yml` specifies the full conda + pip environment used to run all Python analyses. After cloning the repository (see steps below), build this environment on your machine:
@@ -48,7 +48,7 @@ This extension pipeline recreates the representational analyses from Henderson e
 
 2. Build the HDF5 image brick (Python)
 - Open `image_similarity/image_similarity.py` in your IDE.
-- Run the cell labeled: #`%% step 1: make the image brick for matlab`
+- Run the cell labeled: `#%% step 1: make the image brick for matlab`
 - This step loads the PNGs and writes a single HDF5 file here: `image_similarity/features/images_all.h5py`
 
 3. Run MATLAB GIST and prepare SimCLR weights
