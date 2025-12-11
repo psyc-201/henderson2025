@@ -11,7 +11,7 @@ Extension: inspecting the dimensionality of the new shape stimuli and their cate
 #%% set up environment - load in appropriate packages
 
 import numpy as np
-import sys # basic system utilities (e.g., stdout, exit)
+import sys
 import os
 import gc # manual garbage collection to keep memory clean between batches
 import torch # core deep learning library (resnet, simclr, device handling)
@@ -21,7 +21,7 @@ import torchvision.models as models # pretrained resnet backbones
 from sklearn import decomposition # pca implementation
 import pandas as pd
 import PIL.Image # loading png stimuli from disk
-import scipy.stats # general stats helpers (not heavily used here)
+import scipy.stats
 import scipy.spatial.distance # distance metrics for category separability
 import matplotlib.pyplot as plt
 from pathlib import Path # cleaner path handling
@@ -35,7 +35,6 @@ from simclr import SimCLR # simclr model wrapper around the encoder
 # clip implemented in this package, from:
 # https://github.com/openai/CLIP
 import clip # alternative visual encoder option (not the main path here)
-
 
 #%% set paths + init vars
 

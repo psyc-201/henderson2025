@@ -4,26 +4,37 @@
 Created on Wed Nov  5 12:31:59 2025
 
 @author: lenakemmelmeier
-"""
 
+Post-hoc power analysis on the Task x Interaction effect of interest
+"""
 
 #%% set up environment - load in appropiate packages
 
 import math
 from scipy.stats import f as f_dist, ncf as ncf_dist
 
-#%% helpers (effect sizes, posthoc power, sample size estimation)
+
+#%% helper definitions (effect sizes, posthoc power, sample size estimation)
 
 # got this formulua from google (getting partial eta)
 def effect_sizes_from_F(F, df1, df2):
+    """
+    get partial eta-squared and cohen's f from an f value.
+    """
+    
     eta_p2 = (F * df1) / (F * df1 + df2)
     f = math.sqrt(eta_p2 / (1.0 - eta_p2)) # cast as a float (Cohen's f)
     
     return eta_p2, f
 
+
 # it looks like statmodels actually isn't great at power for N-way ANOVAs
-# calculate posthoc power manually using the noncentral F
+# calculating posthoc power manually using the noncentral F
 def posthoc_power_from_F(F, df1, df2, alpha=0.05):
+    """
+    get post-hoc power from an observed f value using the noncentral f.
+    """
+    
     eta_p2, f = effect_sizes_from_F(F, df1, df2) # get partial eta^2 and Cohen's f
     lam = (f * f) * df2 # noncentrality parameter (lambda = f^2 * df2)
     Fcrit = f_dist.isf(alpha, df1, df2) # get critical F value (upper-tail cutoff)
@@ -31,8 +42,13 @@ def posthoc_power_from_F(F, df1, df2, alpha=0.05):
     
     return eta_p2, f, power
 
+
 # compute power for a given N (using observed Cohen's f)
 def power_from_f_N(f, df1, N, alpha=0.05, df2_from_N=lambda N: N - 1):
+    """
+    get power for a specific sample size given cohen's f.
+    """
+    
     df2 = df2_from_N(N)
     lam = (f * f) * df2
     Fcrit = f_dist.isf(alpha, df1, df2)
@@ -40,8 +56,13 @@ def power_from_f_N(f, df1, N, alpha=0.05, df2_from_N=lambda N: N - 1):
     
     return power
 
+
 # finding smallest N reaching a given target power (no rounding!)
 def N_for_target_power(f, df1, target_power, alpha=0.05, start_N=4, max_N=2000, df2_from_N=lambda N: N - 1):
+    """
+    search for the smallest n that reaches a desired target power.
+    """
+    
     N = max(start_N, 2)
    
     while N <= max_N:
@@ -51,10 +72,13 @@ def N_for_target_power(f, df1, target_power, alpha=0.05, start_N=4, max_N=2000, 
             return N, pwr
         
         N += 1
+
+
 #%% using reported values from paper
 
 eta_p2, f, power = posthoc_power_from_F(F=8.99, df1=1, df2=9, alpha=0.05)
 print(f"partial eta^2 = {eta_p2:.3f}, Cohen's f = {f:.3f}, post-hoc power = {power:.3f}")
+
 
 #%% sample size targets for 80%, 90%, 95% power (using observed f)
 
