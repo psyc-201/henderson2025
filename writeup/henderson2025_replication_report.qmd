@@ -26,7 +26,7 @@ In the original study, the authors trained classifiers to predict category membe
 ## Methods
 
 ### Reliability and Validity
-The authors did not include any reliability metrics for their data.
+The original authors did not include any reliability metrics for their data.
 
 ### Power Analysis
 A post-hoc power analysis showed that the current sample (N = 10) provided 76% power to detect the observed two-way interaction (ηₚ² = .50, Cohen’s f = 0.999) at α = .05. To achieve 80%, 90% and 95% power, the original study would have needed to collect sample sizes of approximately 11, 14, and 16 participants, respectively.
@@ -99,40 +99,44 @@ For the simulation/extension aim, I generated a new set of two-dimensional shape
 ## Results
 
 ### Data preparation
-
 Data preparation following the analysis plan. [Just make a note that these occured in another script...]
 
 ### Confirmatory analysis
+**Binary Decoding of Voxel Activation Data (Reproducibility)**  
+The three-way ANOVA including ROI, Task, and Boundary showed that when participants performed the Linear-2 task, the Linear-2 classifier was better at predicting a shape’s category than the Linear-1 classifier, in the context of shapes near the decision boundary (Task × Boundary: *F*(1,9) = 8.17, *p* = .019, ηₚ² = 0.48; **Figure 1**). In other words, I successfully reproduced this key statistic from the original study, as this Task × Boundary effect was very close in size to the originally reported large effect size, ηₚ² = 0.50, and also reached the threshold for significance. 
+
+![Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary.](../bold_decoding_anova_results/figs/Table1_LINEAR_NEARONLY_replica_APA.png){#fig-blobgrid fig-cap="" fig-alt="Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary for the reproducibility attempt." width="70%" fig-align="center"}
+
+Moreover, I successfully reproduced the broader pattern of decoder accuracies. Across all three classifiers, decoding accuracies were generally highest in early visual ROIs (V1, V2, V3) and lowest in later visual ROIs (e.g., IPS), which is consistent with the authors’ point that these were simple shapes whose size and location stayed constant across trials, and thus early visual cortex (V1–V3) was likely sufficient to represent them. Decoding accuracies for the Nonlinear classifier were also lower than for the Linear-1 and Linear-2 classifiers (**Figures 2–4**). Lastly, all mean decoding accuracies remained above chance across all ROIs and classifiers, in line with the original results.
 
 <!-- 
-::: {layout-ncol=3}
-::: {layout-ncol=3}
-![Binary classifier: Predict "Linear-1" category.](../bold_decoding_anova_results/figs/Figure2_linear1_replica_DOTSEM.png){#fig-2A fig-cap="Binary classifier predicting Linear-1 category." fig-alt="Scatter plot of classifier accuracy across ROIs for Linear-1 boundary." width="100%" fig-align="center"}
+These plots below were created in adobe illustrator --- otherwise I would have plotted and rendered them here! Just wanted to show a nice side by side of the authors' and my results.
+!-->
+![Binary classifier predicting Linear-1 category. Panel A shows the original results reported in Henderson et al. (2025). Gray dots represent accuracy values for individual participants, and colored circles with error bars represent the mean ± SEM across participants. Panel B shows my reproducibility attempt using the same decoding approach on the shared preprocessed voxel activation data. The horizontal line marks chance-level decoding accuracy. Dark blue indicates decoding performance for the ‘Linear-1’ task, light blue for the ‘Linear-2’ task, and green for the ‘Nonlinear’ task.](../writeup/figs/linear1_results_side_by_side){#fig-2A fig-alt="Binary classifier predicting Linear-1 category. Gray dots show participant accuracy values, and colored circles with error bars show the mean ± SEM. A horizontal line marks chance-level accuracy. Dark blue corresponds to the 'Linear-1' task, light blue to the 'Linear-2' task, and green to the 'Nonlinear' task." width="100%" fig-align="center"}
 
-![Binary classifier: Predict "Linear-2" category.](../bold_decoding_anova_results/figs/Figure2_linear2_replica_DOTSEM.png){#fig-2B fig-cap="Binary classifier predicting Linear-2 category." fig-alt="Scatter plot of classifier accuracy across ROIs for Linear-2 boundary." width="100%" fig-align="center"}
+![Binary classifier predicting Linear-2 category. Panel A shows the original results reported in Henderson et al. (2025), with gray dots representing accuracy values for individual participants and colored circles with error bars indicating the mean ± SEM. Panel B shows my reproducibility attempt using the same decoding pipeline on the authors’ shared voxel activation data. The horizontal line marks chance-level decoding accuracy. Dark blue indicates decoding performance for the ‘Linear-1’ task, light blue for the ‘Linear-2’ task, and green for the ‘Nonlinear’ task.](../writeup/figs/linear2_results_side_by_side){#fig-2B fig-alt="Binary classifier predicting Linear-2 category. Gray dots show participant accuracy values, and colored circles with error bars show the mean ± SEM. A horizontal line marks chance-level accuracy. Dark blue corresponds to the 'Linear-1' task, light blue to the 'Linear-2' task, and green to the 'Nonlinear' task." width="100%" fig-align="center"}
 
-![Binary classifier: Predict "Nonlinear" category.](../bold_decoding_anova_results/figs/Figure2_nonlinear_replica_DOTSEM.png){#fig-2C fig-cap="Binary classifier predicting Nonlinear category." fig-alt="Scatter plot of classifier accuracy across ROIs for Nonlinear boundary." width="100%" fig-align="center"}
-:::
-:::
+![Binary classifier predicting Nonlinear category. Gray dots represent accuracy values for individual participants, and colored circles with error bars represent the mean ± SEM across 10 participants. The horizontal line marks chance-level decoding accuracy. Dark blue indicates decoding performance for the 'Linear-1' task, light blue for the 'Linear-2' task, and green for the 'Nonlinear' task.](../writeup/figs/nonlinear_results_side_by_side){#fig-2C fig-alt="Binary classifier predicting Nonlinear category. Gray dots show participant accuracy values, and colored circles with error bars show the mean ± SEM. A horizontal line marks chance-level accuracy. Dark blue corresponds to the 'Linear-1' task, light blue to the 'Linear-2' task, and green to the 'Nonlinear' task." width="100%" fig-align="center"}
 
-![6×6 RFC blob grid.](../stimuli/new_blob_stim/grid_montage.png){#fig-blobgrid fig-cap="Blob grid (6×6) spanning 0–5 RFC amplitudes on each axis." fig-alt="36 grayscale blob silhouettes arranged in a 6×6 grid." width="50%" fig-align="center"} -->
 
-<!-- 
-I de-bugged my code for reproducing the ANOVA Task x Boundary interaction -- it turns out there was an issue with how I masked near vs. far trials (only near trials were included in this analysis, and the issue was in how I defined these). **I successfully reproduced their result, as the effect size of this interaction, ηₚ² = .48, was close to the one in the original study, ηₚ² = .50, and also significant (see Figure 5).**
+**Image Similarity & Feature Space Analyses (Simulation)**  
+As described in the Shape Stimuli section, I created a grid of 36 novel stimuli through systematically manipulating a different pair of contours from those used in the original study (**Figure 5**). 
 
-![Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary.](../bold_decoding_anova_results/figs/Table1_LINEAR_NEARONLY_replica_APA.png){#fig-blobgrid fig-cap="" fig-alt="Three-way ANOVA that included ROI, Task, and Boundary on voxel activation data for items near the decision boundary." width="100%" fig-align="center"}
+![Grids of shape silhouette stimuli. Panel A shows the original authors’ 4×4 shape grid defined by two RFC shape axes, and Panel B shows my extended 6×6 grid created by varying a different set of RFc in a denser manner. Each position in the grid corresponds to a unique combination of amplitudes along shape axis 1 (horizontal) and shape axis 2 (vertical).](../writeup/figs/shape_grids_side_by_side.png){#fig-blobgrid 
+fig-alt="Side-by-side image of two shape grids defined by RFC components. Panel A shows the original authors’ 4×4 grid arranged along two shape axes, and Panel B shows my 6×6 extension spanning a denser set of values across the same axes." 
+width="80%" fig-align="center"}
 
-![Image similarity analysis based off calculated activations from two computer vision models, GIST and SimCLR, for each of the 36 main grid images. Quantification of the separability of shape categories within each feature space, based on the ratio of between-category to within-category Euclidean distance values.](../image_similarity/image_category_sep.png){#fig-blobgrid fig-cap="Error bars represent 95% confidence intervals." fig-alt="Image similarity analysis based off calculated activations from two computer vision models, GIST and SimCLR, for each of the 36 main grid images. Quantification of the separability of shape categories within each feature space, based on the ratio of between-category to within-category Euclidean distance values. Error bars represent 95% confidence intervals." width="100%" fig-align="center"}
+From there, I extracted feature vectors using two computer vision models: GIST, which captures lower-level image properties, and SimCLR, which captures more mid- to high-level properties. Category separability, quantified as the ratio of between-category to within-category distances, showed the same overall pattern as the original data. Separability was generally higher for GIST than for SimCLR, and for both models the Linear-1 and Linear-2 boundaries were more separable than the Nonlinear boundary (**Figure 6**). The feature spaces treated the Linear-1 and Linear-2 categories as more visually distinct sets of shapes, while the Nonlinear shape categories were harder to tell apart.
 
-![Visualization of a principal components analysis (PCA) performed on the GIST model features.](../image_similarity/image_gist_pca.png){#fig-blobgrid fig-cap="Each plotted point represents one shape in PC space, colored according to the coordinate value along axis 1 (left) or axis 2 (right)." fig-alt="Visualization of a principal components analysis (PCA) performed on the GIST model features, where each plotted point represents one shape in PC space, colored according to the coordinate value along axis 1 (left) or axis 2 (right)." width="100%" fig-align="center"}
+![Category separability for GIST and SimCLR feature spaces. Panel A shows the original authors’ results, and Panel B shows my reproducibility attempt using the same analysis procedures. Each bar quantifies the separability of the shape categories within each feature space, computed as the ratio of between-category to within-category Euclidean distances for the 36 main grid images. Higher values indicate greater category separability. Bar colors correspond to the three category boundaries: dark blue for Linear-1, light blue for Linear-2, and green for the Nonlinear boundary.](../writeup/figs/category_sep_side_by_side.png){#fig-sep 
+fig-alt="Side-by-side comparison of category separability for GIST and SimCLR feature spaces. Panel A shows the original authors’ results, and Panel B shows my reproducibility attempt. Each bar shows the ratio of between-category to within-category Euclidean distances. Bar colors correspond to Linear-1 (dark blue), Linear-2 (light blue), and Nonlinear (green)."
+width="100%" fig-align="center"}
 
-!--> 
+The PCA results showed that my new stimulus set formed a clear two-dimensional space, and the two shape axes appeared approximately orthogonal to one another, confirming that the intended geometric structure of the stimulus grid was captured (**Figure 7**).
 
-The analyses as specified in the analysis plan.  
-
-*Side-by-side graph with original graph is ideal here*
-
-See if there is any way to embed the plot code in here...? may be hard with how the pipeline is set up
+![PCA visualization of GIST feature space for the shape stimuli. Panel A shows the original authors’ results, and Panel B shows my reproducibility attempt. Each point represents one shape projected into the first two principal components (PC1 and PC2). The left plots are colored according to each shape’s coordinate along shape axis 1, and the right plots are colored according to each shape’s coordinate along shape axis 2.](../writeup/figs/gist_pca_side_by_side.png){#fig-pca 
+fig-alt="PCA visualization of GIST feature space for the shape stimuli. Panel A shows the original authors’ PCA results and Panel B shows my reproduction. Each point corresponds to a shape plotted in PC1–PC2 space, with color indicating its value along shape axis 1 (left) or shape axis 2 (right)." 
+width="60%" fig-align="center"}
 
 ## Discussion
 
